@@ -5,14 +5,11 @@ import (
 	"github.com/UtakataKyosui/gh-wheel/cmd/monitor"
 	"github.com/UtakataKyosui/gh-wheel/cmd/review"
 	"github.com/UtakataKyosui/gh-wheel/cmd/task"
+	"github.com/UtakataKyosui/gh-wheel/internal/auth"
 	"github.com/spf13/cobra"
 )
 
 // NewRootCmd builds the root cobra command for `gh wheel`.
-//
-// Auth gate (PersistentPreRunE calling internal/auth) and full persistent-flag
-// semantics are wired in Issue #3 once internal/auth and internal/ghclient are
-// available.
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:   "wheel",
@@ -26,10 +23,24 @@ and code review workflows into a single gh extension.
   gh wheel review   — AI-assisted code review workflows`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
+		// PersistentPreRunE gates every subcommand on gh presence and version.
+		// Help, completion, and --help bypass the gate to avoid spurious errors.
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			switch cmd.Name() {
+			case "help", "__complete", "__completeNoDesc":
+				return nil
+			}
+			if cmd.Flags().Changed("help") {
+				return nil
+			}
+			if err := auth.CheckGH(); err != nil {
+				return err
+			}
+			return auth.CheckGHVersion()
+		},
 	}
 
-	// Persistent flags — auth gate and semantics wired in Issue #3
-	// (internal/auth, internal/ghclient, internal/cliexit, internal/jsonout).
+	// Persistent flags — read by subcommands via root.PersistentFlags().
 	root.PersistentFlags().StringP("repo", "R", "", "Repository in owner/repo format (detected from cwd if omitted)")
 	root.PersistentFlags().BoolP("json", "j", false, "Output results as JSON")
 	root.PersistentFlags().Bool("dry-run", false, "Validate input without sending API requests")
