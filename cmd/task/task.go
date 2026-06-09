@@ -21,6 +21,11 @@ func NewCmd() *cobra.Command {
 		Short: "Manage your GitHub tasks (PRs and Issues)",
 		Long:  "Browse and operate on PRs and Issues you are involved in as author or reviewer.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if opts.State != "open" && opts.State != "closed" && opts.State != "all" {
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid state %q: must be one of open, closed, all", opts.State))
+			}
+
 			if opts.AuthorOnly && opts.ReviewOnly {
 				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
 					fmt.Errorf("--author-only and --review-only are mutually exclusive"))

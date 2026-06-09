@@ -116,10 +116,10 @@ func TestStateQuery(t *testing.T) {
 		state string
 		want  string
 	}{
-		{"open", "+is:open"},
-		{"closed", "+is:closed"},
+		{"open", " is:open"},
+		{"closed", " is:closed"},
 		{"all", ""},
-		{"", "+is:open"},
+		{"", " is:open"},
 	}
 	for _, c := range cases {
 		if got := stateQuery(c.state); got != c.want {

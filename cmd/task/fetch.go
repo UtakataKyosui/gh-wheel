@@ -17,6 +17,8 @@ type searchPage struct {
 }
 
 // searchItem maps fields from a GitHub Search API item.
+// Note: the Search API does not return PR head details (head.ref); that
+// requires a separate GET /repos/{owner}/{repo}/pulls/{number} call.
 type searchItem struct {
 	Number    int       `json:"number"`
 	Title     string    `json:"title"`
@@ -32,9 +34,6 @@ type searchItem struct {
 		Name string `json:"name"`
 	} `json:"labels"`
 	PullRequest *struct{} `json:"pull_request"`
-	Head        *struct {
-		Ref string `json:"ref"`
-	} `json:"head"`
 }
 
 // fetchOpts controls what the fetch function retrieves.
@@ -65,7 +64,7 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				q := fmt.Sprintf("is:pr+repo:%s+author:@me%s", repo, stateQ)
+				q := fmt.Sprintf("is:pr repo:%s author:@me%s", repo, stateQ)
 				authorRes, errs[0] = searchItems(c, q)
 			}()
 		}
@@ -73,7 +72,7 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				q := fmt.Sprintf("is:pr+repo:%s+review-requested:@me%s", repo, stateQ)
+				q := fmt.Sprintf("is:pr repo:%s review-requested:@me%s", repo, stateQ)
 				reviewRes, errs[1] = searchItems(c, q)
 			}()
 		}
@@ -83,7 +82,7 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			q := fmt.Sprintf("is:issue+repo:%s+assignee:@me%s", repo, stateQ)
+			q := fmt.Sprintf("is:issue repo:%s assignee:@me%s", repo, stateQ)
 			issueRes, errs[2] = searchItems(c, q)
 		}()
 	}
@@ -99,7 +98,7 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 	prs := mergePRs(authorRes, reviewRes, opts.IncludeDrafts)
 
 	if opts.WithReviews && len(prs) > 0 {
-		if err := attachReviews(c, prs); err != nil {
+		if err := attachDetails(c, prs); err != nil {
 			return nil, err
 		}
 	}
@@ -114,7 +113,10 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 }
 
 func searchItems(c *ghclient.Client, q string) ([]searchItem, error) {
-	endpoint := fmt.Sprintf("search/issues?per_page=100&q=%s", url.QueryEscape(q))
+	// url.QueryEscape encodes spaces as '+', which is the correct
+	// application/x-www-form-urlencoded representation for the q parameter.
+	v := url.Values{"per_page": {"100"}, "q": {q}}
+	endpoint := "search/issues?" + v.Encode()
 	var page searchPage
 	if err := c.Get(endpoint, &page); err != nil {
 		return nil, err
@@ -125,11 +127,11 @@ func searchItems(c *ghclient.Client, q string) ([]searchItem, error) {
 func stateQuery(state string) string {
 	switch state {
 	case "closed":
-		return "+is:closed"
+		return " is:closed"
 	case "all":
 		return ""
 	default:
-		return "+is:open"
+		return " is:open"
 	}
 }
 
@@ -175,11 +177,6 @@ func mergePRs(authorItems, reviewItems []searchItem, includeDrafts bool) []PR {
 			labels[i] = l.Name
 		}
 
-		headRef := ""
-		if e.item.Head != nil {
-			headRef = e.item.Head.Ref
-		}
-
 		prs = append(prs, PR{
 			Number:         e.item.Number,
 			Title:          e.item.Title,
@@ -191,7 +188,7 @@ func mergePRs(authorItems, reviewItems []searchItem, includeDrafts bool) []PR {
 			Labels:         labels,
 			Categories:     cats,
 			Body:           e.item.Body,
-			HeadRef:        headRef,
+			HeadRef:        "", // populated by attachDetails when --with-reviews is set
 			Reviews:        []Review{},
 			ReviewComments: []ReviewComment{},
 		})
@@ -230,7 +227,14 @@ func toIssues(items []searchItem) []Issue {
 	return issues
 }
 
-// apiReview maps a single review from the GitHub Reviews API.
+// apiPRDetail maps the PR-specific fields from GET /repos/{owner}/{repo}/pulls/{number}.
+type apiPRDetail struct {
+	Head struct {
+		Ref string `json:"ref"`
+	} `json:"head"`
+}
+
+// apiReview maps a single review from GET /repos/{owner}/{repo}/pulls/{number}/reviews.
 type apiReview struct {
 	User struct {
 		Login string `json:"login"`
@@ -240,38 +244,89 @@ type apiReview struct {
 	SubmittedAt time.Time `json:"submitted_at"`
 }
 
-// attachReviews fetches PR reviews in parallel and sets them on the PR slice.
-func attachReviews(c *ghclient.Client, prs []PR) error {
+// apiReviewComment maps an inline review comment from
+// GET /repos/{owner}/{repo}/pulls/{number}/comments.
+type apiReviewComment struct {
+	User struct {
+		Login string `json:"login"`
+	} `json:"user"`
+	Body      string    `json:"body"`
+	Path      string    `json:"path"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// attachDetails fetches PR details, reviews, and review comments for each PR in
+// parallel, bounded to 10 concurrent requests to avoid GitHub secondary rate limits.
+func attachDetails(c *ghclient.Client, prs []PR) error {
 	var (
 		wg   sync.WaitGroup
 		mu   sync.Mutex
 		errs []error
 	)
 
+	sem := make(chan struct{}, 10)
+
 	for i := range prs {
 		i := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			var reviews []apiReview
-			path := fmt.Sprintf("pulls/%d/reviews", prs[i].Number)
-			if err := c.RepoGet(path, &reviews); err != nil {
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			num := prs[i].Number
+
+			// Fetch PR details for HeadRef.
+			var detail apiPRDetail
+			if err := c.RepoGet(fmt.Sprintf("pulls/%d", num), &detail); err != nil {
 				mu.Lock()
 				errs = append(errs, err)
 				mu.Unlock()
 				return
 			}
-			out := make([]Review, len(reviews))
-			for j, r := range reviews {
-				out[j] = Review{
+
+			// Fetch reviews with per_page=100 to avoid silent truncation.
+			var rawReviews []apiReview
+			if err := c.RepoGet(fmt.Sprintf("pulls/%d/reviews?per_page=100", num), &rawReviews); err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+				return
+			}
+
+			// Fetch inline review comments with per_page=100.
+			var rawComments []apiReviewComment
+			if err := c.RepoGet(fmt.Sprintf("pulls/%d/comments?per_page=100", num), &rawComments); err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+				return
+			}
+
+			reviews := make([]Review, len(rawReviews))
+			for j, r := range rawReviews {
+				reviews[j] = Review{
 					Author:      r.User.Login,
 					State:       r.State,
 					Body:        r.Body,
 					SubmittedAt: r.SubmittedAt,
 				}
 			}
+
+			comments := make([]ReviewComment, len(rawComments))
+			for j, rc := range rawComments {
+				comments[j] = ReviewComment{
+					Author:    rc.User.Login,
+					Body:      rc.Body,
+					Path:      rc.Path,
+					UpdatedAt: rc.UpdatedAt,
+				}
+			}
+
 			mu.Lock()
-			prs[i].Reviews = out
+			prs[i].HeadRef = detail.Head.Ref
+			prs[i].Reviews = reviews
+			prs[i].ReviewComments = comments
 			mu.Unlock()
 		}()
 	}
