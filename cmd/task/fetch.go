@@ -231,6 +231,7 @@ func toIssues(items []searchItem) []Issue {
 type apiPRDetail struct {
 	Head struct {
 		Ref string `json:"ref"`
+		SHA string `json:"sha"`
 	} `json:"head"`
 }
 
@@ -238,10 +239,20 @@ type apiPRDetail struct {
 type apiReview struct {
 	User struct {
 		Login string `json:"login"`
+		Type  string `json:"type"` // "User" or "Bot"
 	} `json:"user"`
 	State       string    `json:"state"`
 	Body        string    `json:"body"`
 	SubmittedAt time.Time `json:"submitted_at"`
+}
+
+// apiCommit maps the committer date from GET /repos/{owner}/{repo}/commits/{sha}.
+type apiCommit struct {
+	Commit struct {
+		Committer struct {
+			Date time.Time `json:"date"`
+		} `json:"committer"`
+	} `json:"commit"`
 }
 
 // apiReviewComment maps an inline review comment from
@@ -303,10 +314,20 @@ func attachDetails(c *ghclient.Client, prs []PR) error {
 				return
 			}
 
+			// Fetch latest commit date via head SHA.
+			var commitData apiCommit
+			if err := c.RepoGet(fmt.Sprintf("commits/%s", detail.Head.SHA), &commitData); err != nil {
+				mu.Lock()
+				errs = append(errs, err)
+				mu.Unlock()
+				return
+			}
+
 			reviews := make([]Review, len(rawReviews))
 			for j, r := range rawReviews {
 				reviews[j] = Review{
 					Author:      r.User.Login,
+					UserType:    r.User.Type,
 					State:       r.State,
 					Body:        r.Body,
 					SubmittedAt: r.SubmittedAt,
@@ -325,6 +346,7 @@ func attachDetails(c *ghclient.Client, prs []PR) error {
 
 			mu.Lock()
 			prs[i].HeadRef = detail.Head.Ref
+			prs[i].LatestCommitAt = commitData.Commit.Committer.Date
 			prs[i].Reviews = reviews
 			prs[i].ReviewComments = comments
 			mu.Unlock()
