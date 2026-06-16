@@ -4,6 +4,7 @@ import (
 	"github.com/UtakataKyosui/gh-wheel/cmd/graph"
 	"github.com/UtakataKyosui/gh-wheel/cmd/monitor"
 	"github.com/UtakataKyosui/gh-wheel/cmd/review"
+	"github.com/UtakataKyosui/gh-wheel/cmd/skill"
 	"github.com/UtakataKyosui/gh-wheel/cmd/task"
 	"github.com/UtakataKyosui/gh-wheel/internal/auth"
 	"github.com/spf13/cobra"
@@ -52,6 +53,7 @@ and code review workflows into a single gh extension.
 		graph.NewCmd(),
 		monitor.NewCmd(),
 		review.NewCmd(),
+		skill.NewCmd(),
 	)
 
 	return root
