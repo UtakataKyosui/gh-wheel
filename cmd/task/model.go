@@ -18,11 +18,13 @@ type PR struct {
 	// Populated only when --with-reviews is set.
 	Reviews        []Review        `json:"reviews"`
 	ReviewComments []ReviewComment `json:"reviewComments"`
+	LatestCommitAt time.Time       `json:"latestCommitAt"`
 }
 
 // Review is a single review on a PR.
 type Review struct {
 	Author      string    `json:"author"`
+	UserType    string    `json:"userType"` // "User" or "Bot"
 	State       string    `json:"state"`
 	Body        string    `json:"body"`
 	SubmittedAt time.Time `json:"submittedAt"`

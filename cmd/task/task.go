@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/x/term"
 	"github.com/spf13/cobra"
 
 	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
@@ -54,8 +55,13 @@ func NewCmd() *cobra.Command {
 				return jsonout.Print(result, jqExpr)
 			}
 
-			printTable(os.Stdout, result)
-			return nil
+			// Fall back to plain table when stdout is not a terminal (e.g. piped).
+			if !term.IsTerminal(os.Stdout.Fd()) {
+				printTable(os.Stdout, result)
+				return nil
+			}
+
+			return runTUI(result, opts.WithReviews)
 		},
 	}
 
