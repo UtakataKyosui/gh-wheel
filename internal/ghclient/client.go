@@ -50,6 +50,19 @@ func New(flagRepo string) (*Client, error) {
 	return &Client{rest: rest, owner: r.Owner, name: r.Name}, nil
 }
 
+// NewForRepo creates a Client targeting a fixed owner/repo without detecting
+// the repository from the cwd. It is intended for posting to a known
+// repository (e.g. gh-wheel's own issue tracker) and therefore must not depend
+// on the current directory being a git repository.
+func NewForRepo(owner, name string) (*Client, error) {
+	rest, err := api.DefaultRESTClient()
+	if err != nil {
+		return nil, cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
+			fmt.Errorf("GitHub authentication failed: %w\nRun: gh auth login", err))
+	}
+	return &Client{rest: rest, owner: owner, name: name}, nil
+}
+
 // NewForTest creates a Client whose HTTP requests are intercepted by transport.
 // The transport should route requests to an httptest server.
 // Intended for unit tests in other packages that need to mock GitHub API calls.

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/spf13/cobra"
+
 	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 )
 
@@ -43,4 +45,64 @@ func TestCobraUsageErr(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestOptedOut(t *testing.T) {
+	tests := []struct {
+		name     string
+		noReport bool
+		env      string
+		want     bool
+	}{
+		{"neither", false, "", false},
+		{"flag only", true, "", true},
+		{"env only", false, "1", true},
+		{"both", true, "1", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := optedOut(tt.noReport, tt.env); got != tt.want {
+				t.Errorf("optedOut(%v, %q) = %v, want %v", tt.noReport, tt.env, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCommandContext(t *testing.T) {
+	newRoot := func() *cobra.Command {
+		root := &cobra.Command{Use: "wheel"}
+		review := &cobra.Command{Use: "review"}
+		post := &cobra.Command{Use: "post", RunE: func(*cobra.Command, []string) error { return nil }}
+		post.Flags().String("body", "", "")
+		review.AddCommand(post)
+		root.AddCommand(review)
+		return root
+	}
+
+	t.Run("leaf command resolved with remaining args", func(t *testing.T) {
+		path, rest := commandContext(newRoot(), []string{"gh-wheel", "review", "post", "--body", "x"})
+		if path != "wheel review post" {
+			t.Errorf("path = %q, want %q", path, "wheel review post")
+		}
+		if len(rest) != 2 || rest[0] != "--body" || rest[1] != "x" {
+			t.Errorf("rest = %v, want [--body x]", rest)
+		}
+	})
+
+	t.Run("empty argv does not panic", func(t *testing.T) {
+		path, rest := commandContext(newRoot(), nil)
+		if path != "wheel" {
+			t.Errorf("path = %q, want %q", path, "wheel")
+		}
+		if rest != nil {
+			t.Errorf("rest = %v, want nil", rest)
+		}
+	})
+
+	t.Run("program name only yields root path", func(t *testing.T) {
+		path, _ := commandContext(newRoot(), []string{"gh-wheel"})
+		if path != "wheel" {
+			t.Errorf("path = %q, want %q", path, "wheel")
+		}
+	})
 }

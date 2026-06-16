@@ -2,11 +2,13 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	ghauth "github.com/cli/go-gh/v2/pkg/auth"
 
@@ -36,6 +38,24 @@ func CheckGHVersion() error {
 			fmt.Errorf("failed to run gh --version: %w", err))
 	}
 	return ParseGHVersion(string(out))
+}
+
+// GHVersionString returns the parsed "X.Y.Z" gh CLI version, or "" if it
+// cannot be determined. Best-effort and used only for diagnostics, so it never
+// returns an error. A 2s timeout guards against `gh --version` hanging, which
+// would otherwise block the crash-report path (including the panic handler).
+func GHVersionString() string {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "gh", "--version").Output()
+	if err != nil {
+		return ""
+	}
+	m := versionRe.FindStringSubmatch(string(out))
+	if m == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s.%s.%s", m[1], m[2], m[3])
 }
 
 // ParseGHVersion is exported for unit testing without invoking gh.

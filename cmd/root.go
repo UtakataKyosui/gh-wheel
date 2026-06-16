@@ -45,6 +45,7 @@ and code review workflows into a single gh extension.
 	root.PersistentFlags().BoolP("json", "j", false, "Output results as JSON")
 	root.PersistentFlags().Bool("dry-run", false, "Validate input without sending API requests")
 	root.PersistentFlags().String("jq", "", "Filter JSON output with a jq expression")
+	root.PersistentFlags().Bool("no-report", false, "Do not offer to file an issue when an unexpected error occurs")
 
 	root.AddCommand(
 		task.NewCmd(),
