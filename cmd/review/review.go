@@ -10,5 +10,6 @@ func NewCmd() *cobra.Command {
 		Short: "Code review workflows for GitHub PRs",
 		Long:  "Generate review prompts, validate AI review output, and post structured code reviews.",
 	}
+	cmd.AddCommand(NewSchemaCmd())
 	return cmd
 }
