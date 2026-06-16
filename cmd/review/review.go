@@ -14,5 +14,6 @@ func NewCmd() *cobra.Command {
 	cmd.AddCommand(newThreadsCmd())
 	cmd.AddCommand(newReplyCmd())
 	cmd.AddCommand(newValidateCmd())
+	cmd.AddCommand(newPostCmd())
 	return cmd
 }
