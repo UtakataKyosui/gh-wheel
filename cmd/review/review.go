@@ -11,5 +11,6 @@ func NewCmd() *cobra.Command {
 		Long:  "Generate review prompts, validate AI review output, and post structured code reviews.",
 	}
 	cmd.AddCommand(NewSchemaCmd())
+	cmd.AddCommand(newThreadsCmd())
 	return cmd
 }
