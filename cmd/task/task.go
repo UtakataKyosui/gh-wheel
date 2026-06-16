@@ -75,5 +75,7 @@ func NewCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&opts.IssuesOnly, "issues-only", false, "Show only Issues (implies --with-issues)")
 	cmd.Flags().BoolVar(&opts.WithReviews, "with-reviews", false, "Fetch review status for each PR (slower)")
 
+	cmd.AddCommand(newPromptCmd())
+
 	return cmd
 }
