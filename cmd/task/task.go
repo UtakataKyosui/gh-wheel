@@ -59,6 +59,8 @@ func NewCmd() *cobra.Command {
 		},
 	}
 
+	cmd.AddCommand(newCloseCmd())
+
 	cmd.Flags().StringVarP(&opts.State, "state", "s", "open", "Filter by state: open, closed, all")
 	cmd.Flags().BoolVarP(&opts.AuthorOnly, "author-only", "a", false, "Show only PRs where you are the author")
 	cmd.Flags().BoolVarP(&opts.ReviewOnly, "review-only", "r", false, "Show only PRs where review is requested from you")

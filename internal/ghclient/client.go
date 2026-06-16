@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"strings"
 
 	"github.com/cli/go-gh/v2/pkg/api"
 
@@ -46,6 +48,41 @@ func New(flagRepo string) (*Client, error) {
 	}
 
 	return &Client{rest: rest, owner: r.Owner, name: r.Name}, nil
+}
+
+// NewForTest creates a Client whose HTTP requests are intercepted by transport.
+// The transport should route requests to an httptest server.
+// Intended for unit tests in other packages that need to mock GitHub API calls.
+//
+// Because go-gh always builds https://api.github.com/... URLs, the transport
+// must be set up to accept the self-signed TLS certificate of the test server
+// AND rewrite the destination URL.  Use TestTransport (below) for convenience.
+func NewForTest(transport http.RoundTripper, owner, name string) (*Client, error) {
+	rest, err := api.NewRESTClient(api.ClientOptions{
+		Transport: transport,
+		Host:      "github.com",
+		AuthToken: "test-token",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &Client{rest: rest, owner: owner, name: name}, nil
+}
+
+// TestTransport wraps an httptest.Server's TLS-aware transport and rewrites
+// every request URL to point at the test server instead of api.github.com.
+type TestTransport struct {
+	Inner   http.RoundTripper
+	BaseURL string // e.g. "https://127.0.0.1:PORT"
+}
+
+// RoundTrip rewrites req.URL.Host and req.URL.Scheme to the test server's
+// address, then delegates to the inner transport.
+func (t *TestTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	clone := req.Clone(req.Context())
+	clone.URL.Host = strings.TrimPrefix(strings.TrimPrefix(t.BaseURL, "https://"), "http://")
+	clone.URL.Scheme = "https"
+	return t.Inner.RoundTrip(clone)
 }
 
 // Owner returns the repository owner.
