@@ -1,6 +1,10 @@
 # gh-wheel
 
-A unified `gh` extension for Issue-Driven development.
+A unified `gh` extension for Issue-Driven development, supporting two complementary workflows:
+
+**As a developer** — Check an Issue, open a PR, respond to review comments, and report fixes back to reviewers.
+
+**As a reviewer** — Pick up a review request, generate an AI-assisted review, and post structured comments to the PR.
 
 ```
 gh wheel task     — browse and manage your PRs and Issues
@@ -8,6 +12,41 @@ gh wheel graph    — visualize Issue/PR dependency graphs
 gh wheel monitor  — watch multiple repos in a live TUI
 gh wheel review   — AI-assisted code review workflows
 gh wheel describe — print command schema as JSON (for AI agents)
+```
+
+## Workflows
+
+### Developer workflow
+
+```bash
+# 1. Check what Issues and PRs need your attention
+gh wheel task
+
+# 2. Visualize Issue dependencies before starting
+gh wheel graph --issue 42
+
+# 3. After pushing a PR, check for unresolved review threads
+gh wheel review threads 42
+
+# 4. Reply to a review comment to report your fix
+gh wheel review reply 42 --comment-id 123456789 --body "Fixed in latest commit."
+```
+
+### Reviewer workflow
+
+```bash
+# 1. List PRs where review is requested from you
+gh wheel task -r
+
+# 2. Generate a Markdown prompt for AI-assisted review
+gh wheel task prompt 42
+
+# 3. Feed the prompt to an AI, save the output as review.yaml
+# 4. Validate the review file before posting
+gh wheel review validate -f review.yaml --pr 42
+
+# 5. Post the review to GitHub
+gh wheel review post 42 -f review.yaml
 ```
 
 ## Requirements
