@@ -31,6 +31,49 @@ var skipCommands = map[string]bool{
 	"skill":      true,
 }
 
+const workflowSection = `## ワークフロー
+
+gh-wheel は2つのロールのワークフローを支援します。
+
+### 開発者（Developer）ワークフロー
+
+Issue の内容を確認して PR を作成し、レビューコメントに対応して修正内容を返信で報告する。
+
+` + "```bash" + `
+# 1. 自分が関わる PR・Issue を一覧する
+gh wheel task
+
+# 2. Issue の依存関係を可視化する
+gh wheel graph --issue 42
+
+# 3. PR の未解決レビュースレッドを確認する
+gh wheel review threads 42
+
+# 4. レビューコメントへ修正完了を返信する
+gh wheel review reply 42 --comment-id 123456789 --body "Fixed in latest commit."
+` + "```" + `
+
+### レビュアー（Reviewer）ワークフロー
+
+レビュー依頼された PR に対して AI 支援でレビューを行い、構造化されたレビューを投稿する。
+
+` + "```bash" + `
+# 1. レビュー依頼されている PR を一覧する
+gh wheel task -r
+
+# 2. AI レビュー用の Markdown プロンプトを生成する
+gh wheel task prompt 42
+
+# 3. AI にプロンプトを渡し、出力を review.yaml として保存する
+# 4. 投稿前にレビューファイルを検証する
+gh wheel review validate -f review.yaml --pr 42
+
+# 5. レビューを GitHub に投稿する
+gh wheel review post 42 -f review.yaml
+` + "```" + `
+
+`
+
 // Generate renders a SKILL.md for the gh-wheel command tree rooted at root.
 func Generate(root *cobra.Command, opts Options) string {
 	name := opts.Name
@@ -72,33 +115,7 @@ func Generate(root *cobra.Command, opts Options) string {
 		"以下のコマンドを実行して gh-wheel を操作してください。\n\n")
 
 	// Workflows.
-	b.WriteString("## ワークフロー\n\n")
-	b.WriteString("gh-wheel は2つのロールのワークフローを支援します。\n\n")
-	b.WriteString("### 開発者（Developer）ワークフロー\n\n")
-	b.WriteString("Issue の内容を確認して PR を作成し、レビューコメントに対応して修正内容を返信で報告する。\n\n")
-	b.WriteString("```bash\n")
-	b.WriteString("# 1. 自分が関わる PR・Issue を一覧する\n")
-	b.WriteString("gh wheel task\n\n")
-	b.WriteString("# 2. Issue の依存関係を可視化する\n")
-	b.WriteString("gh wheel graph --issue 42\n\n")
-	b.WriteString("# 3. PR の未解決レビュースレッドを確認する\n")
-	b.WriteString("gh wheel review threads 42\n\n")
-	b.WriteString("# 4. レビューコメントへ修正完了を返信する\n")
-	b.WriteString("gh wheel review reply 42 --comment-id 123456789 --body \"Fixed in latest commit.\"\n")
-	b.WriteString("```\n\n")
-	b.WriteString("### レビュアー（Reviewer）ワークフロー\n\n")
-	b.WriteString("レビュー依頼された PR に対して AI 支援でレビューを行い、構造化されたレビューを投稿する。\n\n")
-	b.WriteString("```bash\n")
-	b.WriteString("# 1. レビュー依頼されている PR を一覧する\n")
-	b.WriteString("gh wheel task -r\n\n")
-	b.WriteString("# 2. AI レビュー用の Markdown プロンプトを生成する\n")
-	b.WriteString("gh wheel task prompt 42\n\n")
-	b.WriteString("# 3. AI にプロンプトを渡し、出力を review.yaml として保存する\n")
-	b.WriteString("# 4. 投稿前にレビューファイルを検証する\n")
-	b.WriteString("gh wheel review validate -f review.yaml --pr 42\n\n")
-	b.WriteString("# 5. レビューを GitHub に投稿する\n")
-	b.WriteString("gh wheel review post 42 -f review.yaml\n")
-	b.WriteString("```\n\n")
+	b.WriteString(workflowSection)
 
 	// Command reference.
 	b.WriteString("## コマンドリファレンス\n\n")
