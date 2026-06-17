@@ -15,9 +15,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: cliff.toml
+          args: --latest --strip all
+        env:
+          OUTPUT: notes.md
+
       - name: Inject version
         run: printf 'package main\n\nfunc init() { version = "%s" }\n' "${{ github.ref_name }}" > version_inject.go
+
       - uses: cli/gh-extension-precompile@v2
         with:
           generate_attestations: true
           go_version_file: go.mod
+
+      - name: Update release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "${{ github.ref_name }}" --notes-file notes.md
