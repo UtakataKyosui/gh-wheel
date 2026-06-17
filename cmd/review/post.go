@@ -81,7 +81,8 @@ func newPostCmd() *cobra.Command {
 
 			if len(errs) > 0 {
 				return cliexit.NewValidation(cliexit.ErrCodeValidation,
-					fmt.Errorf("validation failed with %d error(s)", len(errs)), nil)
+					fmt.Errorf("validation failed with %d error(s)", len(errs)),
+					map[string]any{"errors": errs})
 			}
 
 			payload := buildReviewPayload(doc)

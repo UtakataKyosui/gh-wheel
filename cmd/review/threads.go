@@ -110,7 +110,8 @@ func newThreadsCmd() *cobra.Command {
 				if result.Threads == nil {
 					result.Threads = []reviewThread{}
 				}
-				return jsonout.Print(result, "")
+				jqExpr, _ := cmd.Root().PersistentFlags().GetString("jq")
+				return jsonout.Print(result, jqExpr)
 			}
 
 			if len(unresolved) == 0 {

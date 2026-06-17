@@ -15,7 +15,7 @@ gh-wheel を「AIエージェント対応CLI設計の8原則」（https://zenn.d
 
 ```bash
 # JSON 出力する全コマンドのファイルを調査
-grep -r "jsonout.Print\|json.MarshalIndent\|json.Marshal" cmd/ --include="*.go" -l
+grep -rE "jsonout.Print|json.MarshalIndent|json.Marshal" cmd/ --include="*.go" -l
 ```
 
 確認項目:
@@ -27,14 +27,14 @@ grep -r "jsonout.Print\|json.MarshalIndent\|json.Marshal" cmd/ --include="*.go" 
 ### 原則2: セマンティック終了コード
 
 ```bash
-grep -r "fmt.Errorf\|errors.New" cmd/ --include="*.go" | grep -v "_test.go"
+grep -rE "fmt.Errorf|errors.New" cmd/ --include="*.go" | grep -v "_test.go"
 ```
 
 確認項目:
 - [ ] `fmt.Errorf` や `errors.New` が直接 return されていないか（`cliexit.New*` でラップされているか）
-- [ ] 「見つからない」エラーに `CodeNotFound(3)` が使われているか
-- [ ] 認証エラーに `CodeAuth(4)` が使われているか
-- [ ] バリデーションエラーに `CodeValidation(5)` が使われているか
+- [ ] 「見つからない」エラーに `CodeNotFound = 3` が使われているか
+- [ ] 認証エラーに `CodeAuth = 4` が使われているか
+- [ ] バリデーションエラーに `CodeValidation = 5` が使われているか
 
 ### 原則3: 非対話モード
 
@@ -55,7 +55,7 @@ grep -r "cobra.Command" cmd/ --include="*.go" -A2 | grep "Use:"
 ### 原則5: スキーマ自己記述
 
 ```bash
-cat cmd/describe/describe.go | grep -A2 "CommandEntry{"
+grep -A2 "CommandEntry{" cmd/describe/describe.go
 ```
 
 確認項目:
@@ -66,7 +66,7 @@ cat cmd/describe/describe.go | grep -A2 "CommandEntry{"
 ### 原則6: アクション可能なエラー
 
 ```bash
-grep -r "NextStep\|next_step" internal/ cmd/ --include="*.go" | grep -v "_test.go"
+grep -rE "NextStep|next_step" internal/ cmd/ --include="*.go" | grep -v "_test.go"
 ```
 
 確認項目:
@@ -77,7 +77,7 @@ grep -r "NextStep\|next_step" internal/ cmd/ --include="*.go" | grep -v "_test.g
 ### 原則7: `--dry-run` サポート
 
 ```bash
-grep -r "dry-run\|DryRun\|dryRun" cmd/ --include="*.go" | grep -v "_test.go"
+grep -rE "dry-run|DryRun|dryRun" cmd/ --include="*.go" | grep -v "_test.go"
 ```
 
 確認項目:

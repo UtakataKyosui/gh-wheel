@@ -12,6 +12,7 @@ import (
 
 	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
+	"github.com/UtakataKyosui/gh-wheel/internal/jsonout"
 )
 
 // issueState is the GitHub Issues API response shape used by the close subcommand.
@@ -52,6 +53,26 @@ the confirmation and close immediately.`,
 				var state issueState
 				if err := c.RepoGet(fmt.Sprintf("issues/%d", n), &state); err != nil {
 					return err
+				}
+				if jsonMode {
+					result := struct {
+						SchemaVersion string `json:"schema_version"`
+						Kind          string `json:"kind"`
+						DryRun        bool   `json:"dry_run"`
+						Number        int    `json:"number"`
+						Title         string `json:"title"`
+						HTMLURL       string `json:"html_url"`
+						State         string `json:"state"`
+					}{
+						SchemaVersion: "v1",
+						Kind:          "task_close_preview",
+						DryRun:        true,
+						Number:        n,
+						Title:         state.Title,
+						HTMLURL:       state.HTMLURL,
+						State:         state.State,
+					}
+					return jsonout.Print(result, "")
 				}
 				fmt.Fprintf(os.Stdout, "[dry-run] would close #%d: %s (%s)\n", n, state.Title, state.HTMLURL)
 				return nil

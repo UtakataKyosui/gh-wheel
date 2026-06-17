@@ -86,7 +86,7 @@ func ParseGHVersion(output string) error {
 		current := fmt.Sprintf("%d.%d.%d", major, minor, patch)
 		e := cliexit.NewAuth(cliexit.ErrCodeAuthOldGH,
 			fmt.Errorf("gh version %s is too old; %s or later is required", current, MinGHVersion))
-		e.NextStep = "Run: gh upgrade"
+		e.NextStep = "Upgrade gh CLI: https://cli.github.com"
 		return e
 	}
 	return nil

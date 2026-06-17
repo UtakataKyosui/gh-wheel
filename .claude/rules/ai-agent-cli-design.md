@@ -22,7 +22,13 @@ JSON 出力には必ず `schema_version` と `kind` を含む。
 ```
 
 **How to apply:**
-- `jsonout.Print(result, jqExpr)` で出力する前に、struct に `SchemaVersion string \`json:"schema_version"\`` と `Kind string \`json:"kind"\`` を定義する
+- `jsonout.Print(result, jqExpr)` で出力する前に、struct に以下のフィールドを定義する:
+
+  ```go
+  SchemaVersion string `json:"schema_version"`
+  Kind          string `json:"kind"`
+  ```
+
 - `SchemaVersion = "v1"` で固定、`Kind` はコマンドごとに一意の snake_case 名を付ける（例: `task_result`, `graph_result`, `command_schema`）
 - 新しいサブコマンドを追加するときは必ず JSON エンベロープを実装する
 
@@ -41,7 +47,7 @@ JSON 出力には必ず `schema_version` と `kind` を含む。
 | 6 | api | `CodeAPI` |
 
 **How to apply:**
-- 「見つからない」系は `cliexit.NewNotFound(ErrCodeNotFound, err)` を使う（exit 1 にしない）
+- 「見つからない」系は `cliexit.NewNotFound(cliexit.ErrCodeNotFound, err)` を使う（exit 1 にしない）
 - 認証エラーには必ず `cliexit.NewAuth(...)` を使う
 - API エラーには `cliexit.NewAPI(...)` を使う
 - `fmt.Errorf` をそのまま return しない（`NewGeneral` でラップする）
