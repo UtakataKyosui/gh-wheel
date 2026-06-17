@@ -13,13 +13,19 @@ func TestBuildDiff_UnderLimit(t *testing.T) {
 	}
 	got := buildDiff(files)
 	if !strings.Contains(got, "--- a/main.go") {
-		t.Errorf("expected main.go header in diff, got: %q", got)
+		t.Errorf("expected '--- a/main.go' header, got:\n%s", got)
+	}
+	if !strings.Contains(got, "+++ b/main.go") {
+		t.Errorf("expected '+++ b/main.go' header, got:\n%s", got)
+	}
+	if !strings.Contains(got, "@@ -1,3 +1,4 @@") {
+		t.Errorf("expected hunk header in output, got:\n%s", got)
 	}
 	if !strings.Contains(got, "--- a/README.md") {
-		t.Errorf("expected README.md header in diff, got: %q", got)
+		t.Errorf("expected '--- a/README.md' header, got:\n%s", got)
 	}
-	if strings.Contains(got, "truncated") {
-		t.Errorf("expected no truncation for small diff, got: %q", got)
+	if strings.Contains(got, "[diff truncated") {
+		t.Errorf("unexpected truncation marker in short diff:\n%s", got)
 	}
 }
 
@@ -52,7 +58,20 @@ func TestRenderPrompt_ContainsFields(t *testing.T) {
 	renderPrompt(&buf, meta, "--- a/foo.go\n+++ b/foo.go\n+fix\n")
 	out := buf.String()
 
-	for _, want := range []string{"#42", "Fix the bug", "@alice", "3", "foo.go"} {
+	checks := []string{
+		"# PR Review Request",
+		"**PR**: #42",
+		"Fix the bug",
+		"@alice",
+		"**Changed files**: 3",
+		"```diff",
+		"--- a/foo.go",
+		"## Review Schema",
+		"```json",
+		"## Review Rules",
+		"suggestion",
+	}
+	for _, want := range checks {
 		if !strings.Contains(out, want) {
 			t.Errorf("renderPrompt output missing %q", want)
 		}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 	"github.com/UtakataKyosui/gh-wheel/internal/reviewschema"
 )
@@ -48,7 +49,8 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			prNum, err := strconv.Atoi(args[0])
 			if err != nil || prNum <= 0 {
-				return fmt.Errorf("invalid PR number %q: must be a positive integer", args[0])
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid PR number %q: must be a positive integer", args[0]))
 			}
 
 			flagRepo, _ := cmd.Flags().GetString("repo")
