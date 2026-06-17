@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/scripts/post-edit-go.sh",
+            "timeout": 30000,
+            "statusMessage": "gofmt + go vet 実行中..."
+          }
+        ]
+      }
+    ]
+  }
+}
