@@ -132,10 +132,15 @@ func Generate(root *cobra.Command, opts Options) string {
 
 // deriveDescription builds a frontmatter description from the root command.
 func deriveDescription(root *cobra.Command) string {
+	base := "gh-wheel (gh wheel) を操作して Issue-Driven 開発を行う。"
 	if root.Short != "" {
-		return root.Short + "。task / graph / monitor / review のコマンドで PR・Issue 管理、依存グラフ、レビューを操作する。"
+		base = root.Short + "。"
 	}
-	return "gh-wheel (gh wheel) を操作して Issue-Driven 開発を行う。"
+	return base + "以下の場合に使用: " +
+		"(1) Issue を確認して PR を作成・管理したいとき " +
+		"(2) レビュー依頼された PR に対してレビューを行い投稿したいとき " +
+		"(3) レビューコメントに対応して返信で報告したいとき " +
+		"(4) Issue・PR の依存グラフを確認したいとき"
 }
 
 // sortedCommands returns parent's available, non-skipped subcommands sorted by
