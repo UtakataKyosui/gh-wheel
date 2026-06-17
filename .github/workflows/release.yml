@@ -19,4 +19,4 @@ jobs:
         with:
           generate_attestations: true
           go_version_file: go.mod
-          go_build_options: "-ldflags '-X main.version=${{ github.ref_name }}'"
+          go_build_options: "-ldflags=-X main.version=${{ github.ref_name }}"
