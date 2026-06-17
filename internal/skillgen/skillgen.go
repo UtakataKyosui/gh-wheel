@@ -62,7 +62,7 @@ gh wheel review reply 42 --comment-id 123456789 --body "Fixed in latest commit."
 gh wheel task -r
 
 # 2. AI レビュー用の Markdown プロンプトを生成する
-gh wheel task prompt 42
+gh wheel review prompt 42
 
 # 3. AI にプロンプトを渡し、出力を review.yaml として保存する
 # 4. 投稿前にレビューファイルを検証する
