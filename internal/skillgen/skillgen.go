@@ -71,6 +71,35 @@ func Generate(root *cobra.Command, opts Options) string {
 	b.WriteString("このスキルは `gh wheel` CLI を操作するためのリファレンスです。" +
 		"以下のコマンドを実行して gh-wheel を操作してください。\n\n")
 
+	// Workflows.
+	b.WriteString("## ワークフロー\n\n")
+	b.WriteString("gh-wheel は2つのロールのワークフローを支援します。\n\n")
+	b.WriteString("### 開発者（Developer）ワークフロー\n\n")
+	b.WriteString("Issue の内容を確認して PR を作成し、レビューコメントに対応して修正内容を返信で報告する。\n\n")
+	b.WriteString("```bash\n")
+	b.WriteString("# 1. 自分が関わる PR・Issue を一覧する\n")
+	b.WriteString("gh wheel task\n\n")
+	b.WriteString("# 2. Issue の依存関係を可視化する\n")
+	b.WriteString("gh wheel graph --issue 42\n\n")
+	b.WriteString("# 3. PR の未解決レビュースレッドを確認する\n")
+	b.WriteString("gh wheel review threads 42\n\n")
+	b.WriteString("# 4. レビューコメントへ修正完了を返信する\n")
+	b.WriteString("gh wheel review reply 42 --comment-id 123456789 --body \"Fixed in latest commit.\"\n")
+	b.WriteString("```\n\n")
+	b.WriteString("### レビュアー（Reviewer）ワークフロー\n\n")
+	b.WriteString("レビュー依頼された PR に対して AI 支援でレビューを行い、構造化されたレビューを投稿する。\n\n")
+	b.WriteString("```bash\n")
+	b.WriteString("# 1. レビュー依頼されている PR を一覧する\n")
+	b.WriteString("gh wheel task -r\n\n")
+	b.WriteString("# 2. AI レビュー用の Markdown プロンプトを生成する\n")
+	b.WriteString("gh wheel task prompt 42\n\n")
+	b.WriteString("# 3. AI にプロンプトを渡し、出力を review.yaml として保存する\n")
+	b.WriteString("# 4. 投稿前にレビューファイルを検証する\n")
+	b.WriteString("gh wheel review validate -f review.yaml --pr 42\n\n")
+	b.WriteString("# 5. レビューを GitHub に投稿する\n")
+	b.WriteString("gh wheel review post 42 -f review.yaml\n")
+	b.WriteString("```\n\n")
+
 	// Command reference.
 	b.WriteString("## コマンドリファレンス\n\n")
 	for _, c := range sortedCommands(root) {
