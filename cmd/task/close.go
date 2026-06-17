@@ -10,6 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 )
 
@@ -34,15 +35,26 @@ the confirmation and close immediately.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := strconv.Atoi(args[0])
 			if err != nil || n <= 0 {
-				return fmt.Errorf("invalid number %q: must be a positive integer", args[0])
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid number %q: must be a positive integer", args[0]))
 			}
 
 			flagRepo, _ := cmd.Flags().GetString("repo")
 			jsonMode, _ := cmd.Flags().GetBool("json")
+			dryRun, _ := cmd.Root().PersistentFlags().GetBool("dry-run")
 
 			c, err := ghclient.New(flagRepo)
 			if err != nil {
 				return err
+			}
+
+			if dryRun {
+				var state issueState
+				if err := c.RepoGet(fmt.Sprintf("issues/%d", n), &state); err != nil {
+					return err
+				}
+				fmt.Fprintf(os.Stdout, "[dry-run] would close #%d: %s (%s)\n", n, state.Title, state.HTMLURL)
+				return nil
 			}
 
 			return confirmAndClose(c, n, jsonMode, os.Stdin, os.Stdout)
@@ -88,7 +100,8 @@ func confirmAndClose(c *ghclient.Client, n int, jsonMode bool, in io.Reader, out
 
 		got, err := strconv.Atoi(input)
 		if err != nil || got != n {
-			return fmt.Errorf("confirmation mismatch: expected %d, got %q", n, input)
+			return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+				fmt.Errorf("confirmation mismatch: expected %d, got %q", n, input))
 		}
 	}
 

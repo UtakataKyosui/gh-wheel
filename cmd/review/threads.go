@@ -1,7 +1,6 @@
 package review
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,7 +9,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
+	"github.com/UtakataKyosui/gh-wheel/internal/jsonout"
 )
 
 const threadsQuery = `
@@ -78,7 +79,8 @@ func newThreadsCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			prNum, err := strconv.Atoi(args[0])
 			if err != nil || prNum <= 0 {
-				return fmt.Errorf("PR must be a positive integer, got %q", args[0])
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("PR must be a positive integer, got %q", args[0]))
 			}
 
 			c, err := ghclient.New(flagRepo)
@@ -94,9 +96,21 @@ func newThreadsCmd() *cobra.Command {
 			unresolved := filterThreads(all)
 
 			if flagJSON {
-				enc := json.NewEncoder(os.Stdout)
-				enc.SetIndent("", "  ")
-				return enc.Encode(unresolved)
+				result := struct {
+					SchemaVersion string         `json:"schema_version"`
+					Kind          string         `json:"kind"`
+					PR            int            `json:"pr"`
+					Threads       []reviewThread `json:"threads"`
+				}{
+					SchemaVersion: "v1",
+					Kind:          "review_threads_result",
+					PR:            prNum,
+					Threads:       unresolved,
+				}
+				if result.Threads == nil {
+					result.Threads = []reviewThread{}
+				}
+				return jsonout.Print(result, "")
 			}
 
 			if len(unresolved) == 0 {
@@ -135,7 +149,8 @@ func fetchAllThreads(c *ghclient.Client, prNum int) ([]reviewThread, error) {
 
 		var result gqlThreadsResp
 		if err := gql.Do(threadsQuery, vars, &result); err != nil {
-			return nil, fmt.Errorf("GraphQL query failed: %w", err)
+			return nil, cliexit.NewAPI(cliexit.ErrCodeAPI,
+				fmt.Errorf("GraphQL query failed: %w", err))
 		}
 
 		nodes := result.Repository.PullRequest.ReviewThreads.Nodes

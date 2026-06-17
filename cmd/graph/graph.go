@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 	model "github.com/UtakataKyosui/gh-wheel/internal/graph"
 	"github.com/UtakataKyosui/gh-wheel/internal/graph/graphql"
@@ -57,12 +58,12 @@ Examples:
 
 			c, err := ghclient.New(flagRepo)
 			if err != nil {
-				return fmt.Errorf("failed to create GitHub client: %w", err)
+				return err
 			}
 
 			gql, err := c.GraphQL()
 			if err != nil {
-				return fmt.Errorf("failed to create GraphQL client: %w", err)
+				return cliexit.NewGeneral(fmt.Errorf("failed to create GraphQL client: %w", err))
 			}
 
 			owner := c.Owner()
@@ -77,7 +78,8 @@ Examples:
 			if issueNum != 0 {
 				startID := findNodeIDByNumber(g, issueNum)
 				if startID == "" {
-					return fmt.Errorf("issue #%d not found in graph", issueNum)
+					return cliexit.NewNotFound(cliexit.ErrCodeNotFound,
+						fmt.Errorf("issue #%d not found in graph", issueNum))
 				}
 				g = g.BFS(startID, depth)
 			}
@@ -113,7 +115,7 @@ func buildGraph(
 	for {
 		page, err := graphql.QueryIssuesPage(gql, owner, repo, cursor)
 		if err != nil {
-			return nil, fmt.Errorf("fetching issues page: %w", err)
+			return nil, cliexit.NewAPI(cliexit.ErrCodeAPI, fmt.Errorf("fetching issues page: %w", err))
 		}
 
 		for _, n := range page.Issues {
@@ -452,12 +454,12 @@ func formatJSON(g *model.Graph) (string, error) {
 func applyJQ(w io.Writer, jsonText, filter string) error {
 	q, err := gojq.Parse(filter)
 	if err != nil {
-		return fmt.Errorf("jq filter parse error: %w", err)
+		return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs, fmt.Errorf("jq filter parse error: %w", err))
 	}
 
 	var input interface{}
 	if err := json.Unmarshal([]byte(jsonText), &input); err != nil {
-		return fmt.Errorf("jq: failed to parse JSON: %w", err)
+		return cliexit.NewGeneral(fmt.Errorf("jq: failed to parse JSON: %w", err))
 	}
 
 	iter := q.Run(input)
@@ -467,7 +469,7 @@ func applyJQ(w io.Writer, jsonText, filter string) error {
 			break
 		}
 		if err, ok := v.(error); ok {
-			return fmt.Errorf("jq evaluation error: %w", err)
+			return cliexit.NewGeneral(fmt.Errorf("jq evaluation error: %w", err))
 		}
 		b, err := json.MarshalIndent(v, "", "  ")
 		if err != nil {
