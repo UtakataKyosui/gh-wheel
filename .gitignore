@@ -2,6 +2,9 @@
 gh-wheel
 dist/
 
+# CI-generated version injection (not committed)
+version_inject.go
+
 # Go build artifacts
 *.exe
 *.exe~
