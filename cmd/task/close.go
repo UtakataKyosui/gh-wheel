@@ -10,7 +10,9 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
+	"github.com/UtakataKyosui/gh-wheel/internal/jsonout"
 )
 
 // issueState is the GitHub Issues API response shape used by the close subcommand.
@@ -34,15 +36,46 @@ the confirmation and close immediately.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			n, err := strconv.Atoi(args[0])
 			if err != nil || n <= 0 {
-				return fmt.Errorf("invalid number %q: must be a positive integer", args[0])
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid number %q: must be a positive integer", args[0]))
 			}
 
 			flagRepo, _ := cmd.Flags().GetString("repo")
 			jsonMode, _ := cmd.Flags().GetBool("json")
+			dryRun, _ := cmd.Root().PersistentFlags().GetBool("dry-run")
 
 			c, err := ghclient.New(flagRepo)
 			if err != nil {
 				return err
+			}
+
+			if dryRun {
+				var state issueState
+				if err := c.RepoGet(fmt.Sprintf("issues/%d", n), &state); err != nil {
+					return err
+				}
+				if jsonMode {
+					result := struct {
+						SchemaVersion string `json:"schema_version"`
+						Kind          string `json:"kind"`
+						DryRun        bool   `json:"dry_run"`
+						Number        int    `json:"number"`
+						Title         string `json:"title"`
+						HTMLURL       string `json:"html_url"`
+						State         string `json:"state"`
+					}{
+						SchemaVersion: "v1",
+						Kind:          "task_close_preview",
+						DryRun:        true,
+						Number:        n,
+						Title:         state.Title,
+						HTMLURL:       state.HTMLURL,
+						State:         state.State,
+					}
+					return jsonout.Print(result, "")
+				}
+				fmt.Fprintf(os.Stdout, "[dry-run] would close #%d: %s (%s)\n", n, state.Title, state.HTMLURL)
+				return nil
 			}
 
 			return confirmAndClose(c, n, jsonMode, os.Stdin, os.Stdout)
@@ -88,7 +121,8 @@ func confirmAndClose(c *ghclient.Client, n int, jsonMode bool, in io.Reader, out
 
 		got, err := strconv.Atoi(input)
 		if err != nil || got != n {
-			return fmt.Errorf("confirmation mismatch: expected %d, got %q", n, input)
+			return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+				fmt.Errorf("confirmation mismatch: expected %d, got %q", n, input))
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 	"github.com/spf13/cobra"
 )
@@ -44,17 +45,19 @@ func newPostCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flagFile == "" {
-				return fmt.Errorf("--file is required")
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("--file is required"))
 			}
 
 			var prNum int
 			if _, err := fmt.Sscanf(args[0], "%d", &prNum); err != nil || prNum <= 0 {
-				return fmt.Errorf("invalid PR number %q", args[0])
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid PR number %q", args[0]))
 			}
 
 			doc, err := parseReviewFile(flagFile, flagFormat)
 			if err != nil {
-				return fmt.Errorf("parse review file: %w", err)
+				return cliexit.NewGeneral(fmt.Errorf("parse review file: %w", err))
 			}
 
 			opts := validateOpts{
@@ -77,15 +80,26 @@ func newPostCmd() *cobra.Command {
 			}
 
 			if len(errs) > 0 {
-				return fmt.Errorf("validation failed with %d error(s)", len(errs))
+				return cliexit.NewValidation(cliexit.ErrCodeValidation,
+					fmt.Errorf("validation failed with %d error(s)", len(errs)),
+					map[string]any{"errors": errs})
 			}
 
 			payload := buildReviewPayload(doc)
 
 			if flagDryRun {
-				data, err := json.MarshalIndent(payload, "", "  ")
+				out := struct {
+					SchemaVersion string            `json:"schema_version"`
+					Kind          string            `json:"kind"`
+					Payload       reviewPostPayload `json:"payload"`
+				}{
+					SchemaVersion: "v1",
+					Kind:          "review_post_preview",
+					Payload:       payload,
+				}
+				data, err := json.MarshalIndent(out, "", "  ")
 				if err != nil {
-					return fmt.Errorf("marshal payload: %w", err)
+					return cliexit.NewGeneral(fmt.Errorf("marshal payload: %w", err))
 				}
 				fmt.Fprintln(cmd.OutOrStdout(), string(data))
 				return nil
@@ -93,12 +107,12 @@ func newPostCmd() *cobra.Command {
 
 			c, err := ghclient.New(flagRepo)
 			if err != nil {
-				return fmt.Errorf("ghclient: %w", err)
+				return err
 			}
 
 			htmlURL, err := postReview(c, prNum, payload)
 			if err != nil {
-				return fmt.Errorf("post review: %w", err)
+				return cliexit.NewAPI(cliexit.ErrCodeAPI, fmt.Errorf("post review: %w", err))
 			}
 
 			fmt.Fprintf(cmd.OutOrStdout(), "✓ Review posted: %s\n", htmlURL)

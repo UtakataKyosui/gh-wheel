@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -63,12 +64,13 @@ func newValidateCmd() *cobra.Command {
 		Long:  "Gate-keeper that validates AI-generated review JSON/YAML before posting to GitHub.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if flagFile == "" {
-				return fmt.Errorf("--file is required")
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("--file is required"))
 			}
 
 			doc, err := parseReviewFile(flagFile, flagFormat)
 			if err != nil {
-				return fmt.Errorf("parse review file: %w", err)
+				return cliexit.NewGeneral(fmt.Errorf("parse review file: %w", err))
 			}
 
 			opts := validateOpts{
@@ -81,18 +83,19 @@ func newValidateCmd() *cobra.Command {
 			if flagPR > 0 {
 				c, err := ghclient.New(flagRepo)
 				if err != nil {
-					return fmt.Errorf("ghclient: %w", err)
+					return err
 				}
 
 				// Fetch changed_files count for dynamic min-comment threshold.
 				if flagMinComments == 0 {
 					var prResp struct {
-						ChangedFiles int    `json:"changed_files"`
+						ChangedFiles int            `json:"changed_files"`
 						User         struct{ Login string } `json:"user"`
 					}
 					path := fmt.Sprintf("pulls/%d", flagPR)
 					if err := c.RepoGet(path, &prResp); err != nil {
-						return fmt.Errorf("fetch PR: %w", err)
+						return cliexit.NewAPI(cliexit.ErrCodeAPI,
+							fmt.Errorf("fetch PR: %w", err))
 					}
 					switch {
 					case prResp.ChangedFiles <= 4:
@@ -108,7 +111,7 @@ func newValidateCmd() *cobra.Command {
 				// Always fetch current user for self-approve guard.
 				me, err := c.CurrentUser()
 				if err != nil {
-					return fmt.Errorf("current user: %w", err)
+					return err
 				}
 				opts.CurrentUser = me
 			}
@@ -127,7 +130,9 @@ func newValidateCmd() *cobra.Command {
 			}
 
 			if len(errs) > 0 {
-				return fmt.Errorf("validation failed with %d error(s)", len(errs))
+				return cliexit.NewValidation(cliexit.ErrCodeValidation,
+					fmt.Errorf("validation failed with %d error(s)", len(errs)),
+					map[string]any{"errors": errs})
 			}
 			fmt.Fprintln(cmd.OutOrStdout(), "OK: review file is valid")
 			return nil

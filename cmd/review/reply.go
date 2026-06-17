@@ -1,12 +1,12 @@
 package review
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
 	"github.com/spf13/cobra"
 
+	"github.com/UtakataKyosui/gh-wheel/internal/cliexit"
 	"github.com/UtakataKyosui/gh-wheel/internal/ghclient"
 )
 
@@ -31,15 +31,18 @@ func newReplyCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if commentID == "" {
-				return errors.New("--comment-id is required")
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("--comment-id is required"))
 			}
 			if body == "" {
-				return errors.New("--body is required")
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("--body is required"))
 			}
 
 			prNum, err := strconv.Atoi(args[0])
 			if err != nil {
-				return fmt.Errorf("invalid PR number %q: %w", args[0], err)
+				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
+					fmt.Errorf("invalid PR number %q: %w", args[0], err))
 			}
 
 			c, err := ghclient.New(flagRepo)
