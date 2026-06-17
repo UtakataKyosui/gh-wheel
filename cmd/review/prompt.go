@@ -1,4 +1,4 @@
-package task
+package review
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ type prFile struct {
 
 const diffMaxBytes = 80_000
 
-// newPromptCmd returns the `gh wheel task prompt <PR>` subcommand.
+// newPromptCmd returns the `gh wheel review prompt <PR>` subcommand.
 func newPromptCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prompt <PR>",
@@ -43,7 +43,7 @@ func newPromptCmd() *cobra.Command {
 for AI review to stdout.
 
 Example:
-  gh wheel task prompt 123 | claude --print > review.json`,
+  gh wheel review prompt 123 | claude --print > review.json`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			prNum, err := strconv.Atoi(args[0])
@@ -80,7 +80,6 @@ Example:
 func buildDiff(files []prFile) string {
 	var sb strings.Builder
 	for _, f := range files {
-		// Write file header lines.
 		header := fmt.Sprintf("--- a/%s\n+++ b/%s\n", f.Filename, f.Filename)
 		sb.WriteString(header)
 		if f.Patch != "" {
@@ -94,7 +93,6 @@ func buildDiff(files []prFile) string {
 		return full
 	}
 
-	// Truncate at a byte boundary that does not split a UTF-8 sequence.
 	cut := diffMaxBytes
 	for cut > 0 && full[cut]&0xC0 == 0x80 {
 		cut--

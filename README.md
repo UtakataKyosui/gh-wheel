@@ -39,7 +39,7 @@ gh wheel review reply 42 --comment-id 123456789 --body "Fixed in latest commit."
 gh wheel task -r
 
 # 2. Generate a Markdown prompt for AI-assisted review
-gh wheel task prompt 42
+gh wheel review prompt 42
 
 # 3. Feed the prompt to an AI, save the output as review.yaml
 # 4. Validate the review file before posting
@@ -113,14 +113,6 @@ gh wheel task close 42 --json    # non-interactive, closes immediately
 gh wheel task close 42 --dry-run # preview without closing
 ```
 
-**`gh wheel task prompt <PR>`**
-
-Fetch PR metadata and diff, then write a Markdown prompt suitable for AI review to stdout.
-
-```bash
-gh wheel task prompt 42          # print AI review prompt to stdout
-gh wheel task prompt 42 | pbcopy # copy to clipboard
-```
 
 ---
 
@@ -168,6 +160,15 @@ gh wheel monitor
 Generate review prompts, validate AI review output, and post structured code reviews.
 
 #### Subcommands
+
+**`gh wheel review prompt <PR>`**
+
+Fetch PR metadata and diff, then write a Markdown prompt suitable for AI review to stdout.
+
+```bash
+gh wheel review prompt 42          # print AI review prompt to stdout
+gh wheel review prompt 42 | pbcopy # copy to clipboard
+```
 
 **`gh wheel review schema`**
 
