@@ -39,8 +39,9 @@ func TestNewCmd_Flags(t *testing.T) {
 // buildTestGraph returns a small but representative graph used by formatter tests.
 //
 // Graph:
-//   PR #5 -[closes]-> Issue #1
-//   Issue #1 -[sub_issue]-> Issue #2
+//
+//	PR #5 -[closes]-> Issue #1
+//	Issue #1 -[sub_issue]-> Issue #2
 func buildTestGraph() *model.Graph {
 	g := model.NewGraph()
 	g.AddNode(&model.Node{

@@ -15,12 +15,12 @@ import (
 
 // prMeta maps fields returned by GET /repos/{owner}/{repo}/pulls/{number}.
 type prMeta struct {
-	Number       int    `json:"number"`
-	Title        string `json:"title"`
-	User         struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	User   struct {
 		Login string `json:"login"`
 	} `json:"user"`
-	ChangedFiles int    `json:"changed_files"`
+	ChangedFiles int `json:"changed_files"`
 	Head         struct {
 		SHA string `json:"sha"`
 	} `json:"head"`

@@ -56,10 +56,10 @@ type reviewThread struct {
 }
 
 type threadComment struct {
-	ID        string `json:"id"`
-	Body      string `json:"body"`
-	URL       string `json:"url"`
-	Author    struct {
+	ID     string `json:"id"`
+	Body   string `json:"body"`
+	URL    string `json:"url"`
+	Author struct {
 		Login string `json:"login"`
 	} `json:"author"`
 	CreatedAt string `json:"createdAt"`

@@ -89,7 +89,7 @@ func newValidateCmd() *cobra.Command {
 				// Fetch changed_files count for dynamic min-comment threshold.
 				if flagMinComments == 0 {
 					var prResp struct {
-						ChangedFiles int            `json:"changed_files"`
+						ChangedFiles int                    `json:"changed_files"`
 						User         struct{ Login string } `json:"user"`
 					}
 					path := fmt.Sprintf("pulls/%d", flagPR)

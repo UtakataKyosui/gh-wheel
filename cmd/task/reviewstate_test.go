@@ -14,7 +14,7 @@ func TestIsAIReviewer(t *testing.T) {
 		{"alice", "User", false},
 		{"copilot[bot]", "Bot", true},
 		{"github-actions[bot]", "Bot", true},
-		{"any-name[bot]", "User", true},  // [bot] suffix wins
+		{"any-name[bot]", "User", true},     // [bot] suffix wins
 		{"coderabbitai[bot]", "User", true}, // known list
 		{"claude[bot]", "Bot", true},
 		{"bob", "Bot", true}, // type=Bot wins even without [bot] suffix
