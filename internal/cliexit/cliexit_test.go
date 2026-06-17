@@ -121,6 +121,7 @@ func TestConstructors_ExitCodes(t *testing.T) {
 		err  error
 		want int
 	}{
+		{"NewNotFound", cliexit.NewNotFound(cliexit.ErrCodeNotFound, errors.New("x")), cliexit.CodeNotFound},
 		{"NewAuth", cliexit.NewAuth(cliexit.ErrCodeAuthNoBinary, errors.New("x")), cliexit.CodeAuth},
 		{"NewUsage", cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs, errors.New("x")), cliexit.CodeUsage},
 		{"NewValidation", cliexit.NewValidation(cliexit.ErrCodeValidation, errors.New("x"), nil), cliexit.CodeValidation},
@@ -133,5 +134,64 @@ func TestConstructors_ExitCodes(t *testing.T) {
 				t.Errorf("ExitCodeOf = %d, want %d", got, tc.want)
 			}
 		})
+	}
+}
+
+// ─── Render: JSON category / exit_code / next_step ───────────────────────────
+
+func TestRender_JSON_Category(t *testing.T) {
+	cases := []struct {
+		name         string
+		err          error
+		wantCategory string
+		wantExitCode int
+	}{
+		{"auth", cliexit.NewAuth(cliexit.ErrCodeAuthNoBinary, errors.New("x")), "auth", cliexit.CodeAuth},
+		{"not_found", cliexit.NewNotFound(cliexit.ErrCodeNotFound, errors.New("x")), "not_found", cliexit.CodeNotFound},
+		{"validation", cliexit.NewValidation(cliexit.ErrCodeValidation, errors.New("x"), nil), "validation", cliexit.CodeValidation},
+		{"api", cliexit.NewAPI(cliexit.ErrCodeAPI, errors.New("x")), "api", cliexit.CodeAPI},
+		{"usage", cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs, errors.New("x")), "usage", cliexit.CodeUsage},
+		{"general", cliexit.NewGeneral(errors.New("x")), "general", cliexit.CodeGeneral},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			cliexit.Render(tc.err, true, &stdout, &stderr)
+
+			var got struct {
+				Error struct {
+					Category string `json:"category"`
+					ExitCode int    `json:"exit_code"`
+				} `json:"error"`
+			}
+			if err := json.Unmarshal(stdout.Bytes(), &got); err != nil {
+				t.Fatalf("parse JSON: %v\nraw: %s", err, stdout.String())
+			}
+			if got.Error.Category != tc.wantCategory {
+				t.Errorf("category = %q, want %q", got.Error.Category, tc.wantCategory)
+			}
+			if got.Error.ExitCode != tc.wantExitCode {
+				t.Errorf("exit_code = %d, want %d", got.Error.ExitCode, tc.wantExitCode)
+			}
+		})
+	}
+}
+
+func TestRender_JSON_NextStep(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	err := cliexit.NewAuth(cliexit.ErrCodeAuthNoToken, errors.New("not authenticated"))
+	err.NextStep = "Run: gh auth login"
+	cliexit.Render(err, true, &stdout, &stderr)
+
+	var got struct {
+		Error struct {
+			NextStep string `json:"next_step"`
+		} `json:"error"`
+	}
+	if parseErr := json.Unmarshal(stdout.Bytes(), &got); parseErr != nil {
+		t.Fatalf("parse JSON: %v\nraw: %s", parseErr, stdout.String())
+	}
+	if got.Error.NextStep != "Run: gh auth login" {
+		t.Errorf("next_step = %q, want %q", got.Error.NextStep, "Run: gh auth login")
 	}
 }

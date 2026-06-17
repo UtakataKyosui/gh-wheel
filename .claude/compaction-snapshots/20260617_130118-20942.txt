@@ -1,0 +1,4 @@
+Working copy changes:
+A .claude/compaction-snapshots/20260617_130118-20942.txt
+Working copy  (@) : ltropsxp 5e61fd67 (no description set)
+Parent commit (@-): roupuqlo 325382d9 main | feat(feedback): add `gh wheel feedback` TUI command

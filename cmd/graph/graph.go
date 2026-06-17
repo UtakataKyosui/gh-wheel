@@ -366,9 +366,11 @@ func formatDot(g *model.Graph) string {
 
 // jsonGraph is the JSON representation of a graph.
 type jsonGraph struct {
-	Nodes []jsonNode `json:"nodes"`
-	Edges []jsonEdge `json:"edges"`
-	Stats jsonStats  `json:"stats"`
+	SchemaVersion string     `json:"schema_version"`
+	Kind          string     `json:"kind"`
+	Nodes         []jsonNode `json:"nodes"`
+	Edges         []jsonEdge `json:"edges"`
+	Stats         jsonStats  `json:"stats"`
 }
 
 type jsonNode struct {
@@ -427,8 +429,10 @@ func formatJSON(g *model.Graph) (string, error) {
 
 	s := g.Stats()
 	jg := jsonGraph{
-		Nodes: jNodes,
-		Edges: jEdges,
+		SchemaVersion: "v1",
+		Kind:          "graph_result",
+		Nodes:         jNodes,
+		Edges:         jEdges,
 		Stats: jsonStats{
 			Total:  s.Total,
 			Open:   s.Open,

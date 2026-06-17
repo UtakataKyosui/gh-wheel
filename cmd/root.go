@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/UtakataKyosui/gh-wheel/cmd/describe"
 	"github.com/UtakataKyosui/gh-wheel/cmd/feedback"
 	"github.com/UtakataKyosui/gh-wheel/cmd/graph"
 	"github.com/UtakataKyosui/gh-wheel/cmd/monitor"
@@ -56,6 +57,7 @@ and code review workflows into a single gh extension.
 		review.NewCmd(),
 		skill.NewCmd(),
 		feedback.NewCmd(),
+		describe.NewCmd(),
 	)
 
 	return root

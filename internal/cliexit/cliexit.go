@@ -6,9 +6,10 @@
 //	0 — success
 //	1 — general / internal error
 //	2 — usage error (invalid args, unknown flag, …)
-//	3 — authentication error
-//	4 — validation error
-//	5 — GitHub API error
+//	3 — resource not found
+//	4 — authentication error
+//	5 — validation error
+//	6 — GitHub API error
 package cliexit
 
 import (
@@ -23,15 +24,19 @@ const (
 	CodeSuccess    = 0
 	CodeGeneral    = 1
 	CodeUsage      = 2
-	CodeAuth       = 3
-	CodeValidation = 4
-	CodeAPI        = 5
+	CodeNotFound   = 3
+	CodeAuth       = 4
+	CodeValidation = 5
+	CodeAPI        = 6
 )
 
 // ErrCode is a machine-readable error identifier embedded in JSON output.
 type ErrCode string
 
 const (
+	// Not found
+	ErrCodeNotFound ErrCode = "NOT_FOUND"
+
 	// Auth
 	ErrCodeAuthNoBinary ErrCode = "AUTH_GH_NOT_FOUND"
 	ErrCodeAuthNoToken  ErrCode = "AUTH_NOT_LOGGED_IN"
@@ -53,12 +58,13 @@ const (
 
 // Error is a structured gh-wheel error that carries a process exit code,
 // a machine-readable code, a human-readable message, optional structured
-// details, and a wrapped inner error.
+// details, a next-step hint for the operator, and a wrapped inner error.
 type Error struct {
 	ExitCode int
 	Code     ErrCode
 	Message  string
 	Details  map[string]any
+	NextStep string
 	Wrapped  error
 }
 
@@ -67,7 +73,12 @@ func (e *Error) Unwrap() error { return e.Wrapped }
 
 // ─── Constructors ─────────────────────────────────────────────────────────────
 
-// NewAuth returns an authentication error (exit code 3).
+// NewNotFound returns a not-found error (exit code 3).
+func NewNotFound(code ErrCode, err error) *Error {
+	return &Error{ExitCode: CodeNotFound, Code: code, Message: errMsg(err), Wrapped: err}
+}
+
+// NewAuth returns an authentication error (exit code 4).
 func NewAuth(code ErrCode, err error) *Error {
 	return &Error{ExitCode: CodeAuth, Code: code, Message: errMsg(err), Wrapped: err}
 }
@@ -77,13 +88,13 @@ func NewUsage(code ErrCode, err error) *Error {
 	return &Error{ExitCode: CodeUsage, Code: code, Message: errMsg(err), Wrapped: err}
 }
 
-// NewValidation returns a validation error (exit code 4).
+// NewValidation returns a validation error (exit code 5).
 // details may be nil.
 func NewValidation(code ErrCode, err error, details map[string]any) *Error {
 	return &Error{ExitCode: CodeValidation, Code: code, Message: errMsg(err), Details: details, Wrapped: err}
 }
 
-// NewAPI returns a GitHub API error (exit code 5).
+// NewAPI returns a GitHub API error (exit code 6).
 func NewAPI(code ErrCode, err error) *Error {
 	return &Error{ExitCode: CodeAPI, Code: code, Message: errMsg(err), Wrapped: err}
 }
@@ -116,13 +127,19 @@ func Render(err error, asJSON bool, stdout, stderr io.Writer) {
 	if asJSON {
 		out := struct {
 			Error struct {
-				Code    ErrCode        `json:"code"`
-				Message string         `json:"message"`
-				Details map[string]any `json:"details,omitempty"`
+				Category string         `json:"category"`
+				ExitCode int            `json:"exit_code"`
+				Code     ErrCode        `json:"code"`
+				Message  string         `json:"message"`
+				NextStep string         `json:"next_step,omitempty"`
+				Details  map[string]any `json:"details,omitempty"`
 			} `json:"error"`
 		}{}
+		out.Error.Category = categoryOf(e)
+		out.Error.ExitCode = e.ExitCode
 		out.Error.Code = e.Code
 		out.Error.Message = e.Message
+		out.Error.NextStep = e.NextStep
 		out.Error.Details = e.Details
 		b, marshalErr := json.Marshal(out)
 		if marshalErr != nil {
@@ -151,6 +168,23 @@ func ExitCodeOf(err error) int {
 }
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
+
+func categoryOf(e *Error) string {
+	switch e.ExitCode {
+	case CodeNotFound:
+		return "not_found"
+	case CodeAuth:
+		return "auth"
+	case CodeValidation:
+		return "validation"
+	case CodeAPI:
+		return "api"
+	case CodeUsage:
+		return "usage"
+	default:
+		return "general"
+	}
+}
 
 func errMsg(err error) string {
 	if err == nil {

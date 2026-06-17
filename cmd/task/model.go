@@ -52,9 +52,11 @@ type Issue struct {
 
 // TaskResult is the top-level output for `gh wheel task`.
 type TaskResult struct {
-	Repository string    `json:"repository"`
-	User       string    `json:"user"`
-	FetchedAt  time.Time `json:"fetchedAt"`
-	PRs        []PR      `json:"prs"`
-	Issues     []Issue   `json:"issues"`
+	SchemaVersion string    `json:"schema_version"`
+	Kind          string    `json:"kind"`
+	Repository    string    `json:"repository"`
+	User          string    `json:"user"`
+	FetchedAt     time.Time `json:"fetchedAt"`
+	PRs           []PR      `json:"prs"`
+	Issues        []Issue   `json:"issues"`
 }

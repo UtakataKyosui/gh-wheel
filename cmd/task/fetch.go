@@ -104,11 +104,13 @@ func fetch(c *ghclient.Client, login string, opts fetchOpts) (*TaskResult, error
 	}
 
 	return &TaskResult{
-		Repository: repo,
-		User:       login,
-		FetchedAt:  time.Now().UTC(),
-		PRs:        prs,
-		Issues:     toIssues(issueRes),
+		SchemaVersion: "v1",
+		Kind:          "task_result",
+		Repository:    repo,
+		User:          login,
+		FetchedAt:     time.Now().UTC(),
+		PRs:           prs,
+		Issues:        toIssues(issueRes),
 	}, nil
 }
 

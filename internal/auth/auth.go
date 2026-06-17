@@ -23,8 +23,10 @@ var versionRe = regexp.MustCompile(`gh version (\d+)\.(\d+)\.(\d+)`)
 // CheckGH verifies that the gh binary is present in PATH.
 func CheckGH() error {
 	if _, err := exec.LookPath("gh"); err != nil {
-		return cliexit.NewAuth(cliexit.ErrCodeAuthNoBinary,
+		e := cliexit.NewAuth(cliexit.ErrCodeAuthNoBinary,
 			fmt.Errorf("gh binary not found in PATH; install GitHub CLI from https://cli.github.com"))
+		e.NextStep = "Install the GitHub CLI: https://cli.github.com"
+		return e
 	}
 	return nil
 }
@@ -99,8 +101,10 @@ func Token(host string) (string, error) {
 	}
 	token, _ := ghauth.TokenForHost(host) // second return is source, not error
 	if token == "" {
-		return "", cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
+		e := cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
 			fmt.Errorf("not authenticated for %s; run `gh auth login` first", host))
+		e.NextStep = "Run: gh auth login"
+		return "", e
 	}
 	return token, nil
 }
