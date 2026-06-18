@@ -40,6 +40,7 @@ var spec = commandSchema{
 	Commands: []commandEntry{
 		{Name: "task", Short: "Manage your GitHub tasks (PRs and Issues)", OutputKind: "task_result"},
 		{Name: "task time", Short: "Show estimated work time breakdown for a PR by session", OutputKind: "task_time_result"},
+		{Name: "task next", Short: "Find an approachable unstarted Issue and self-assign", OutputKind: "task_next_result"},
 		{Name: "graph", Short: "Visualize GitHub Issue/PR relationship graphs", OutputKind: "graph_result"},
 		{Name: "monitor", Short: "Watch multiple repos in a live TUI"},
 		{Name: "review", Short: "AI-assisted code review workflows"},

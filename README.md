@@ -114,6 +114,37 @@ gh wheel task close 42 --json    # non-interactive, closes immediately
 gh wheel task close 42 --dry-run # preview without closing
 ```
 
+**`gh wheel task next [N]`**
+
+Find an open, unassigned Issue that is **ready to start** and assign it to you. Useful for picking up the next piece of work in an Issue-Driven flow.
+
+An Issue is "ready to start" when it is:
+
+- open and **unassigned** (`no:assignee`),
+- not labelled `epic` / `wontfix` / `invalid` / `duplicate` / `question`,
+- (unless `--no-blockers`) **not already linked to a PR** and **not an aggregator with open sub-issues**.
+
+Candidates are ranked, preferring `good first issue` (+2) and `help wanted` (+1) and de-prioritising `priority:low` (−2); ties break by ascending Issue number. By default the top candidate is shown and you re-enter its number to confirm before it is assigned.
+
+```bash
+gh wheel task next               # rank candidates, confirm, assign the top one
+gh wheel task next --list        # only list candidates (no assignment)
+gh wheel task next --dry-run     # preview the assignment without writing
+gh wheel task next 16            # assign a specific Issue (#16)
+gh wheel task next --json        # non-interactive: assign top candidate, emit JSON
+gh wheel task next --no-blockers # skip blocker filtering (faster; no GraphQL)
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--list` | false | List candidates without assigning |
+| `--yes` | false | Skip the confirmation prompt before assigning |
+| `--no-blockers` | false | Skip blocker filtering (faster; no GraphQL queries) |
+| `--limit` | `5` | Maximum number of candidates to show |
+| `--label` | | Restrict candidates to a label |
+
+JSON output uses `kind: "task_next_result"` (or `task_next_preview` for `--dry-run`) with a ranked `candidates` array and an `assigned` object (`null` when nothing was assigned).
+
 
 ---
 

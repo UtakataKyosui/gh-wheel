@@ -64,7 +64,7 @@ func TestWrite_Commands(t *testing.T) {
 	for _, c := range got.Commands {
 		names[c.Name] = true
 	}
-	for _, want := range []string{"task", "graph", "monitor", "review", "okr", "okr metrics", "feedback", "describe"} {
+	for _, want := range []string{"task", "task next", "graph", "monitor", "review", "okr", "okr metrics", "feedback", "describe"} {
 		if !names[want] {
 			t.Errorf("command %q not found in describe output", want)
 		}
