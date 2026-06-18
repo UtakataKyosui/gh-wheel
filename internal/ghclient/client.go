@@ -72,8 +72,10 @@ func NewForRepo(owner, name string) (*Client, error) {
 func NewUserScoped() (*Client, error) {
 	rest, err := api.DefaultRESTClient()
 	if err != nil {
-		return nil, cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
-			fmt.Errorf("GitHub authentication failed: %w\nRun: gh auth login", err))
+		e := cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
+			fmt.Errorf("GitHub authentication failed: %w", err))
+		e.NextStep = "Run: gh auth login"
+		return nil, e
 	}
 	return &Client{rest: rest}, nil
 }

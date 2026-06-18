@@ -11,6 +11,7 @@ gh wheel task     — browse and manage your PRs and Issues
 gh wheel graph    — visualize Issue/PR dependency graphs
 gh wheel monitor  — watch multiple repos in a live TUI
 gh wheel review   — AI-assisted code review workflows
+gh wheel okr      — compute GitHub activity metrics for OKR key results
 gh wheel describe — print command schema as JSON (for AI agents)
 ```
 
@@ -237,6 +238,72 @@ gh wheel review reply 42 --comment-id 123456789 --body "Fixed in latest commit."
 | `--comment-id` | (required) | Reply target comment ID |
 | `--body` | (required) | Reply text |
 | `-R, --repo` | cwd | Repository (`owner/name`) |
+
+---
+
+### `gh wheel okr`
+
+Compute GitHub activity metrics for OKR key-result tracking. Designed to feed
+[okr-hub](https://github.com/UtakataKyosui/okr-hub)'s `okr-metrics-sync` skill.
+
+**`gh wheel okr metrics --since <date> --until <date>`**
+
+Aggregate your GitHub activity over a date range. By default the search is
+**cross-repo** (`author:@me` / `reviewed-by:@me` across every repository you can
+see), which suits personal OKRs. Pass `-R owner/repo` to scope to one repository.
+
+```bash
+# Cross-repo metrics for a period (does not require being inside a git repo)
+gh wheel okr metrics --since 2026-04-01 --until 2026-09-30 --json
+
+# Scope to a single repository
+gh wheel okr metrics -R UtakataKyosui/gh-wheel --since 2026-04-01 --until 2026-09-30
+
+# Match metrics onto key results (JSON shape produced by okr-hub's okr_parse.py)
+gh wheel okr metrics --since 2026-04-01 --until 2026-09-30 \
+  --krs '[{"label":"KR1","title":"PR品質向上","metrics_source":"github:avg_review_comments_per_pr"}]' \
+  --json | jq '.kr_metrics'
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--since` | (required) | Start date `YYYY-MM-DD` (inclusive) |
+| `--until` | (required) | End date `YYYY-MM-DD` (inclusive) |
+| `--krs` | | Key results to match, as JSON: `[{"label","title","metrics_source"}]` |
+| `-R, --repo` | all repos | Scope to a single repository (`owner/name`) |
+
+The `metrics` object uses the same keys as okr-hub's `計測ソース: github:<key>`
+fields, so output is consumable by the `okr-metrics-sync` skill:
+
+`authored_prs_total`, `pr_count`, `merged_prs`, `avg_cycle_time_hours` (null if
+nothing merged), `review_comments_received`, `avg_review_comments_per_pr`,
+`reviewed_prs`, `issues_created`, `issues_closed`.
+
+**Metric semantics** (read before using these in ratios):
+
+- **Date axis differs per metric.** `pr_count` / `authored_prs_total`, `reviewed_prs`, `issues_created` are filtered by **creation** date; `merged_prs` by **merge** date; `issues_closed` by **close** date. Because `merged_prs` (merged-in-window) and `pr_count` (created-in-window) are different populations, a PR created before the window but merged inside it counts only in `merged_prs` — so `merged_prs / pr_count` can exceed 1. Treat each as an independent count, not a rate.
+- **`reviewed_prs` is creation-dated.** It counts PRs *created* in the window that you reviewed (GitHub Search has no "reviewed-on" qualifier), not PRs you reviewed during the window.
+- **`review_comments_received` / `avg_review_comments_per_pr` count conversation comments**, not inline code-review comments (the Search API's `comments` field). This matches okr-hub's `okr_github_metrics.py`.
+- **Cross-repo scope.** Without `-R`, `author:@me` / `reviewed-by:@me` span **every repository you can access** (including org repos and forks), which may include work outside your "personal" OKRs. Use `-R owner/repo` to scope.
+- Averages are computed over an enumerated sample capped at 1000 PRs; the counts (`*_total`, `pr_count`, …) stay exact via `total_count` beyond that cap.
+
+#### Integrating with okr-hub
+
+okr-hub currently computes these figures with
+`plugins/okr-progress/scripts/okr_github_metrics.py`. To switch that skill to
+gh-wheel (cross-repo, paginated, structured), have `okr-metrics-sync` call:
+
+```bash
+gh wheel okr metrics --since <period_start> --until <period_end> \
+  --krs '<JSON array from okr_parse.py>' --json
+```
+
+and read `.metrics` and `.kr_metrics` from the output. Two behavioural notes
+versus the Python script: metrics are **cross-repo by default** (pass `-R` for
+single-repo parity), and an unauthenticated `gh` surfaces as **exit code 4 with
+an error envelope** rather than an `{"available": false}` body — a successful run
+always reports `"available": true`. (This wiring lives in the okr-hub repo and is
+out of scope for gh-wheel itself.)
 
 ---
 

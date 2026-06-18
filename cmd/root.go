@@ -5,6 +5,7 @@ import (
 	"github.com/UtakataKyosui/gh-wheel/cmd/feedback"
 	"github.com/UtakataKyosui/gh-wheel/cmd/graph"
 	"github.com/UtakataKyosui/gh-wheel/cmd/monitor"
+	"github.com/UtakataKyosui/gh-wheel/cmd/okr"
 	"github.com/UtakataKyosui/gh-wheel/cmd/review"
 	"github.com/UtakataKyosui/gh-wheel/cmd/skill"
 	"github.com/UtakataKyosui/gh-wheel/cmd/task"
@@ -23,7 +24,8 @@ and code review workflows into a single gh extension.
   gh wheel task     — browse and manage your PRs and Issues
   gh wheel graph    — visualize Issue/PR dependency graphs
   gh wheel monitor  — watch multiple repos in a live TUI
-  gh wheel review   — AI-assisted code review workflows`,
+  gh wheel review   — AI-assisted code review workflows
+  gh wheel okr      — compute GitHub activity metrics for OKR key results`,
 		SilenceErrors: true,
 		SilenceUsage:  true,
 		// PersistentPreRunE gates every subcommand on gh presence and version.
@@ -55,6 +57,7 @@ and code review workflows into a single gh extension.
 		graph.NewCmd(),
 		monitor.NewCmd(),
 		review.NewCmd(),
+		okr.NewCmd(),
 		skill.NewCmd(),
 		feedback.NewCmd(),
 		describe.NewCmd(),
