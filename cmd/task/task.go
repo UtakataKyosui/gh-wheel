@@ -67,6 +67,7 @@ func NewCmd() *cobra.Command {
 
 	cmd.AddCommand(newCloseCmd())
 	cmd.AddCommand(newTimeCmd())
+	cmd.AddCommand(newNextCmd())
 
 	cmd.Flags().StringVarP(&opts.State, "state", "s", "open", "Filter by state: open, closed, all")
 	cmd.Flags().BoolVarP(&opts.AuthorOnly, "author-only", "a", false, "Show only PRs where you are the author")

@@ -36,6 +36,8 @@ type ErrCode string
 const (
 	// Not found
 	ErrCodeNotFound ErrCode = "NOT_FOUND"
+	// Resource exists but is not in an actionable state (e.g. a closed Issue).
+	ErrCodeIssueNotOpen ErrCode = "ISSUE_NOT_OPEN"
 
 	// Auth
 	ErrCodeAuthNoBinary ErrCode = "AUTH_GH_NOT_FOUND"
