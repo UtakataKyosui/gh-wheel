@@ -145,6 +145,40 @@ gh wheel task next --no-blockers # skip blocker filtering (faster; no GraphQL)
 
 JSON output uses `kind: "task_next_result"` (or `task_next_preview` for `--dry-run`) with a ranked `candidates` array and an `assigned` object (`null` when nothing was assigned).
 
+**`gh wheel task today`**
+
+Build a **read-only** plan of what to work on today, fitted to a time budget. It gathers everything on your plate, classifies each item, estimates per-category effort, and greedily fills the budget in priority order.
+
+Items are collected and ranked by priority:
+
+1. `review` — a PR awaiting **your** review (unblock others).
+2. `pr-merge` — your **approved** PR, ready to merge.
+3. `pr-fix` — your PR with **outstanding** changes requested (a PR you have already pushed a fix for is treated as awaiting re-review and skipped).
+4. `in-progress` — an Issue **assigned to you** — continue it.
+5. `new` — a fresh approachable Issue (same readiness rules as `task next`); only fetched when budget remains.
+
+Each item gets a per-category effort estimate. The budget is filled greedily: items that fit go into `plan`, the rest into `deferred`. The single highest-priority item is **always** included even if it alone exceeds the budget (set `over_budget: true` in that case), so the plan is never empty when there is work. This command never assigns, labels, or merges anything, so `--dry-run` produces identical output.
+
+```bash
+gh wheel task today                 # plan within the default 6h budget
+gh wheel task today --budget 4h     # smaller budget
+gh wheel task today --json          # machine-readable plan
+gh wheel task today --no-new        # skip fresh candidate Issues (triage only)
+gh wheel task today --budget 90m --json
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--budget` | `6h` | Time budget for today (duration: `6h`, `90m`, `4h30m`) |
+| `--review-effort` | `20` | Estimated minutes per PR review |
+| `--merge-effort` | `10` | Estimated minutes to merge an approved PR |
+| `--pr-effort` | `45` | Estimated minutes to address changes requested on your PR |
+| `--issue-effort` | `90` | Estimated minutes per Issue (in-progress or new) |
+| `--no-new` | false | Do not include fresh approachable Issues |
+| `--no-blockers` | false | Skip blocker filtering for new Issues (faster; no GraphQL queries) |
+
+JSON output uses `kind: "task_today_result"` with `plan` and `deferred` arrays, a `params` object (the budget and effort inputs), `total_estimated_minutes`, `over_budget`, and `truncated` (best-effort flag set when a search hit its 100-result cap).
+
 
 ---
 
