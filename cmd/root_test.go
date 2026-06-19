@@ -37,7 +37,7 @@ func TestNewRootCmd_Subcommands(t *testing.T) {
 	for _, c := range root.Commands() {
 		got[c.Use] = true
 	}
-	for _, name := range []string{"task", "graph", "monitor", "review"} {
+	for _, name := range []string{"task", "graph", "monitor", "review", "okr"} {
 		if !got[name] {
 			t.Errorf("subcommand %q not registered", name)
 		}

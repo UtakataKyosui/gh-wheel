@@ -43,6 +43,8 @@ var spec = commandSchema{
 		{Name: "graph", Short: "Visualize GitHub Issue/PR relationship graphs", OutputKind: "graph_result"},
 		{Name: "monitor", Short: "Watch multiple repos in a live TUI"},
 		{Name: "review", Short: "AI-assisted code review workflows"},
+		{Name: "okr", Short: "Compute GitHub activity metrics for OKR key results"},
+		{Name: "okr metrics", Short: "Compute period GitHub metrics (cross-repo) for okr-hub KR sync", OutputKind: "okr_metrics"},
 		{Name: "feedback", Short: "Send feature requests or bug reports for gh-wheel"},
 		{Name: "skill", Short: "Generate a Claude Code Agent Skill scaffold"},
 		{Name: "describe", Short: "Print gh-wheel's command schema as JSON"},

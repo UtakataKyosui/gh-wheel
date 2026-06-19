@@ -63,6 +63,23 @@ func NewForRepo(owner, name string) (*Client, error) {
 	return &Client{rest: rest, owner: owner, name: name}, nil
 }
 
+// NewUserScoped creates a Client with no associated repository, for commands
+// that query GitHub across all repositories the authenticated user can see
+// (e.g. `gh wheel okr metrics`, which aggregates author:@me / reviewed-by:@me
+// activity via the Search API). It must not depend on the cwd being a git
+// repository. owner/name are left empty; only the non-repo helpers (Get,
+// CurrentUser, GraphQL) are valid on the returned Client.
+func NewUserScoped() (*Client, error) {
+	rest, err := api.DefaultRESTClient()
+	if err != nil {
+		e := cliexit.NewAuth(cliexit.ErrCodeAuthNoToken,
+			fmt.Errorf("GitHub authentication failed: %w", err))
+		e.NextStep = "Run: gh auth login"
+		return nil, e
+	}
+	return &Client{rest: rest}, nil
+}
+
 // NewForTest creates a Client whose HTTP requests are intercepted by transport.
 // The transport should route requests to an httptest server.
 // Intended for unit tests in other packages that need to mock GitHub API calls.
