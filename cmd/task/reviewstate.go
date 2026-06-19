@@ -99,3 +99,82 @@ func stateForReviews(reviews []Review, addressedAfter bool) string {
 		return "💬"
 	}
 }
+
+// humanReviewClass is the actionable state of a PR derived from human reviews
+// only. It is computed independently from the display icons in
+// computeReviewStates so that `task today` can classify own PRs without the
+// 🔄 short-circuit conflating human/AI reviews.
+type humanReviewClass int
+
+const (
+	reviewNone             humanReviewClass = iota // no human reviews yet
+	reviewApproved                                 // ≥1 human approval, no outstanding changes requested
+	reviewChangesRequested                         // a human requested changes, not yet addressed by a newer commit
+	reviewAddressed                                // changes requested, but a commit landed after → awaiting re-review
+	reviewCommented                                // only comments from humans (no approval / changes requested)
+)
+
+// classifyHumanReview reduces a PR's human reviews to a single actionable state.
+//
+// Decision reviews (APPROVED / CHANGES_REQUESTED / DISMISSED) and plain
+// COMMENTED reviews are tracked separately per author: on GitHub a later
+// COMMENTED review does NOT clear an earlier approval or change request — the
+// decision sticks. A human approval is likewise sticky across new commits
+// (kept until dismissed or re-requested). Changes-requested becomes
+// reviewAddressed once latestCommitAt is newer than the most recent
+// changes-requested review, so a PR you have already pushed a fix for is not
+// surfaced as still-needing-work. AI/bot reviews are ignored.
+func classifyHumanReview(reviews []Review, latestCommitAt time.Time) humanReviewClass {
+	latestDecision := make(map[string]Review, len(reviews))
+	latestComment := make(map[string]Review, len(reviews))
+	for _, r := range reviews {
+		if isAIReviewer(r.Author, r.UserType) {
+			continue
+		}
+		switch r.State {
+		case "APPROVED", "CHANGES_REQUESTED", "DISMISSED":
+			if ex, ok := latestDecision[r.Author]; !ok || r.SubmittedAt.After(ex.SubmittedAt) {
+				latestDecision[r.Author] = r
+			}
+		case "COMMENTED":
+			if ex, ok := latestComment[r.Author]; !ok || r.SubmittedAt.After(ex.SubmittedAt) {
+				latestComment[r.Author] = r
+			}
+		}
+	}
+	if len(latestDecision) == 0 && len(latestComment) == 0 {
+		return reviewNone
+	}
+
+	var (
+		hasChangesRequested bool
+		hasApproved         bool
+		latestChangesAt     time.Time
+	)
+	for _, r := range latestDecision {
+		switch r.State {
+		case "CHANGES_REQUESTED":
+			hasChangesRequested = true
+			if r.SubmittedAt.After(latestChangesAt) {
+				latestChangesAt = r.SubmittedAt
+			}
+		case "APPROVED":
+			hasApproved = true
+		}
+		// DISMISSED carries no standing decision.
+	}
+
+	switch {
+	case hasChangesRequested:
+		if !latestCommitAt.IsZero() && latestCommitAt.After(latestChangesAt) {
+			return reviewAddressed
+		}
+		return reviewChangesRequested
+	case hasApproved:
+		return reviewApproved
+	case len(latestComment) > 0:
+		return reviewCommented
+	default:
+		return reviewNone
+	}
+}
