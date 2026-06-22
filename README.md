@@ -179,6 +179,36 @@ gh wheel task today --budget 90m --json
 
 JSON output uses `kind: "task_today_result"` with `plan` and `deferred` arrays, a `params` object (the budget and effort inputs), `total_estimated_minutes`, `over_budget`, and `truncated` (best-effort flag set when a search hit its 100-result cap).
 
+**`gh wheel task schedule`**
+
+Run a **self-contained background daemon** that periodically snapshots your task list to `<repo>/.git/my-tasks/current.json` — **no cron or launchd required**. Useful for keeping a fresh view of pending reviews/merges without re-querying GitHub on every command, and (with `--notify`) for a desktop nudge when work is waiting.
+
+```bash
+gh wheel task schedule add                 # watch the current repo every 5m, start the daemon
+gh wheel task schedule add --interval 10m --notify   # custom interval + desktop notification
+gh wheel task schedule add --review-only   # snapshot only PRs awaiting your review
+gh wheel task schedule list                # registered repos + daemon status
+gh wheel task schedule status              # daemon pid + total snapshots taken
+gh wheel task schedule remove              # unregister the current repo (stops daemon if it was the last)
+gh wheel task schedule start               # start the daemon manually
+gh wheel task schedule stop                # stop the daemon (SIGTERM)
+```
+
+The daemon writes its config, pid, and log under `$XDG_CONFIG_HOME/gh-wheel/` (`schedules.json`, `daemon.pid`, `daemon.log`). Re-running `add` for a repo updates its settings while preserving run statistics.
+
+| `add` flag | Default | Description |
+|------|---------|-------------|
+| `--interval` | `5m` | Snapshot interval (Go duration; minimum `1m`) |
+| `-s, --state` | `open` | Filter by state: `open`, `closed`, `all` |
+| `-a, --author-only` | false | Snapshot only PRs you authored |
+| `-r, --review-only` | false | Snapshot only PRs where review is requested from you |
+| `-d, --include-drafts` | true | Include draft PRs |
+| `--with-reviews` | false | Fetch review status for each PR (slower) |
+| `--notify` | false | Show a desktop notification after each snapshot (macOS) |
+| `--no-start` | false | Register without starting the daemon |
+
+JSON output uses `kind` values `schedule_add_result`, `schedule_list_result`, `schedule_remove_result`, `schedule_start_result`, `schedule_stop_result`, and `schedule_status_result`, each with an `entries` array and a `daemon` object (`{running, pid}`).
+
 
 ---
 
