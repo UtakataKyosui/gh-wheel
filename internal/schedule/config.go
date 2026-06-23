@@ -21,6 +21,11 @@ import (
 // SchemaVersion is the schedules.json format version.
 const SchemaVersion = "v1"
 
+// EnvConfigDir overrides the gh-wheel configuration directory. When Start spawns
+// the daemon it re-exports this as the resolved absolute path so the long-lived
+// daemon and its spawning CLI always agree on the location (see ConfigDir).
+const EnvConfigDir = "GH_WHEEL_CONFIG_DIR"
+
 // MinInterval is the smallest snapshot interval allowed, to avoid hammering the
 // GitHub API (and tripping secondary rate limits).
 const MinInterval = time.Minute
@@ -167,9 +172,19 @@ func ValidateInterval(s string) (time.Duration, error) {
 // ─── paths ──────────────────────────────────────────────────────────────────
 
 // ConfigDir resolves (and creates) the gh-wheel configuration directory.
+//
+// A relative EnvConfigDir is resolved to an absolute path (against the current
+// process's working directory) so a single process is at least internally
+// consistent. To keep the background daemon and the CLI in agreement, Start
+// re-exports the resolved absolute path into the daemon's environment; an
+// EnvConfigDir value is therefore best given as an absolute path.
 func ConfigDir() (string, error) {
-	if d := os.Getenv("GH_WHEEL_CONFIG_DIR"); d != "" {
-		return d, ensureDir(d)
+	if d := os.Getenv(EnvConfigDir); d != "" {
+		abs, err := filepath.Abs(d)
+		if err != nil {
+			return "", fmt.Errorf("resolve config dir %q: %w", d, err)
+		}
+		return abs, ensureDir(abs)
 	}
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {

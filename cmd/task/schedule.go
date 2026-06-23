@@ -1,6 +1,7 @@
 package task
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -288,7 +289,11 @@ func newScheduleRemoveCmd() *cobra.Command {
 			}
 			human := fmt.Sprintf("Stopped watching %s.", repoName)
 			if len(cfg.Entries) == 0 {
-				if stopped, pid, serr := schedule.Stop(); serr == nil && stopped {
+				stopped, pid, serr := schedule.Stop()
+				if serr != nil {
+					return cliexit.NewGeneral(fmt.Errorf("stop daemon after removing last repository: %w", serr))
+				}
+				if stopped {
 					dv = daemonView{Running: false, PID: 0}
 					human += fmt.Sprintf(" No repositories left; daemon stopped (was pid %d).", pid)
 				}
@@ -392,6 +397,9 @@ func newScheduleRunCmd() *cobra.Command {
 // summarize counts PRs awaiting your review and PRs you authored from a snapshot.
 func summarize(repoName string, r *TaskResult) schedule.Summary {
 	s := schedule.Summary{Repo: repoName}
+	if r == nil {
+		return s
+	}
 	for _, pr := range r.PRs {
 		for _, cat := range pr.Categories {
 			switch cat {
@@ -406,7 +414,12 @@ func summarize(repoName string, r *TaskResult) schedule.Summary {
 }
 
 // snapshotEntry is the SnapshotFunc the daemon calls for each due repository.
-func snapshotEntry(e schedule.Entry) ([]byte, schedule.Summary, error) {
+// It honours ctx by aborting before issuing any GitHub request once the daemon
+// is shutting down, so SIGTERM is not held up by a fetch about to start.
+func snapshotEntry(ctx context.Context, e schedule.Entry) ([]byte, schedule.Summary, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, schedule.Summary{}, err
+	}
 	owner, name, _ := strings.Cut(e.Repo, "/")
 	c, err := ghclient.NewForRepo(owner, name)
 	if err != nil {

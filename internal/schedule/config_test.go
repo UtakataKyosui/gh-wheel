@@ -1,6 +1,7 @@
 package schedule
 
 import (
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -104,6 +105,23 @@ func TestValidateInterval(t *testing.T) {
 	}
 	if _, err := ValidateInterval("10s"); err == nil {
 		t.Error("ValidateInterval(10s) should error: below minimum")
+	}
+}
+
+func TestConfigDirResolvesRelativeToAbsolute(t *testing.T) {
+	// Run from a scratch dir so the relative config dir is created there.
+	t.Chdir(t.TempDir())
+	t.Setenv("GH_WHEEL_CONFIG_DIR", "rel-cfg")
+
+	d, err := ConfigDir()
+	if err != nil {
+		t.Fatalf("ConfigDir: %v", err)
+	}
+	if !filepath.IsAbs(d) {
+		t.Errorf("ConfigDir() = %q, want an absolute path", d)
+	}
+	if filepath.Base(d) != "rel-cfg" {
+		t.Errorf("ConfigDir() = %q, want it to end in rel-cfg", d)
 	}
 }
 

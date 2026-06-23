@@ -28,6 +28,13 @@ func TestSummarize(t *testing.T) {
 	}
 }
 
+func TestSummarizeNilResult(t *testing.T) {
+	s := summarize("a/b", nil)
+	if s.Repo != "a/b" || s.Authored != 0 || s.ReviewRequested != 0 {
+		t.Errorf("summarize(nil) = %+v, want zero counts for a/b", s)
+	}
+}
+
 func TestToView(t *testing.T) {
 	last := time.Date(2026, 6, 22, 9, 0, 0, 0, time.UTC)
 	v := toView(schedule.Entry{Repo: "a/b", Interval: "30m", LastRun: &last, RunCount: 3})
