@@ -441,6 +441,43 @@ gh wheel skill --name my-wheel          # custom skill name
 
 ---
 
+## Claude Code Skills
+
+The Claude Code Agent Skill for gh-wheel is bundled in the `skills/` directory
+of this extension. Once you have gh-wheel installed, copy the skill to your
+global Claude skills directory:
+
+```bash
+cp -r "$(gh extension path wheel)/skills/gh-wheel" ~/.claude/skills/
+```
+
+This writes `~/.claude/skills/gh-wheel/SKILL.md` plus per-command and workflow
+reference files so Claude picks it up automatically in every session.
+
+> **`gh wheel skill` is deprecated.** Future Claude Code skills for gh-wheel are
+> distributed via `skills/` in this repository and installed with the command above.
+
+### What the skill teaches Claude
+
+| Capability | Commands |
+|---|---|
+| Task management | `task`, `task today`, `task next`, `task close` |
+| Code review | `review prompt`, `review validate`, `review post`, `review threads`, `review reply` |
+| Dependency graph | `graph` |
+| OKR metrics | `okr metrics` |
+| Developer workflow | End-to-end Issue → PR → review-reply loop |
+| Reviewer workflow | End-to-end review-request → AI review → post loop |
+
+### Example prompts
+
+```
+/gh-wheel — list my open PRs and assigned Issues in this repo
+/gh-wheel — plan today's work with a 4h budget
+/gh-wheel — run an AI review on PR #42 and post it
+```
+
+---
+
 ## Global Flags
 
 Available on all subcommands:

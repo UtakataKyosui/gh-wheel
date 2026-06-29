@@ -1,5 +1,5 @@
 # Binaries
-gh-wheel
+/gh-wheel
 dist/
 
 # CI-generated version injection (not committed)
