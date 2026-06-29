@@ -41,7 +41,7 @@ By default the SKILL.md is written to stdout. Pass --output <dir> to write it to
 <dir>/<name>/SKILL.md (e.g. --output .claude/skills produces
 .claude/skills/gh-wheel/SKILL.md).`,
 		Deprecated: "the Claude Code skill for gh-wheel is now published via gh skill.\n\nInstall it with:\n  gh skill install UtakataKyosui/gh-wheel gh-wheel\n",
-		Args: cobra.NoArgs,
+		Args:       cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !nameRe.MatchString(o.name) {
 				return cliexit.NewUsage(cliexit.ErrCodeUsageBadArgs,
