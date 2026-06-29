@@ -75,6 +75,42 @@ gh extension upgrade wheel --version v0.3.0
 
 ---
 
+## Claude Code Skills
+
+The Claude Code Agent Skill for gh-wheel is published via `gh skill`.
+Install it with a single command:
+
+```bash
+gh skill install UtakataKyosui/gh-wheel gh-wheel
+```
+
+This installs `gh-wheel/SKILL.md` plus per-command and workflow reference files
+so Claude picks it up automatically in every session.
+
+> **`gh wheel skill` is deprecated.** Future Claude Code skills for gh-wheel are
+> published via `gh skill` and installed with the command above.
+
+### What the skill teaches Claude
+
+| Capability | Commands |
+|---|---|
+| Task management | `task`, `task today`, `task next`, `task close` |
+| Code review | `review prompt`, `review validate`, `review post`, `review threads`, `review reply` |
+| Dependency graph | `graph` |
+| OKR metrics | `okr metrics` |
+| Developer workflow | End-to-end Issue → PR → review-reply loop |
+| Reviewer workflow | End-to-end review-request → AI review → post loop |
+
+### Example prompts
+
+```
+/gh-wheel — list my open PRs and assigned Issues in this repo
+/gh-wheel — plan today's work with a 4h budget
+/gh-wheel — run an AI review on PR #42 and post it
+```
+
+---
+
 ## Commands
 
 ### `gh wheel task`
@@ -438,42 +474,6 @@ gh wheel skill --name my-wheel          # custom skill name
 | `--name` | `gh-wheel` | Skill name (frontmatter name and output directory) |
 | `--description` | | Override the frontmatter description |
 | `-o, --output` | stdout | Directory to write `<name>/SKILL.md` into |
-
----
-
-## Claude Code Skills
-
-The Claude Code Agent Skill for gh-wheel is published via `gh skill`.
-Install it with a single command:
-
-```bash
-gh skill install UtakataKyosui/gh-wheel gh-wheel
-```
-
-This installs `gh-wheel/SKILL.md` plus per-command and workflow reference files
-so Claude picks it up automatically in every session.
-
-> **`gh wheel skill` is deprecated.** Future Claude Code skills for gh-wheel are
-> published via `gh skill` and installed with the command above.
-
-### What the skill teaches Claude
-
-| Capability | Commands |
-|---|---|
-| Task management | `task`, `task today`, `task next`, `task close` |
-| Code review | `review prompt`, `review validate`, `review post`, `review threads`, `review reply` |
-| Dependency graph | `graph` |
-| OKR metrics | `okr metrics` |
-| Developer workflow | End-to-end Issue → PR → review-reply loop |
-| Reviewer workflow | End-to-end review-request → AI review → post loop |
-
-### Example prompts
-
-```
-/gh-wheel — list my open PRs and assigned Issues in this repo
-/gh-wheel — plan today's work with a 4h budget
-/gh-wheel — run an AI review on PR #42 and post it
-```
 
 ---
 
