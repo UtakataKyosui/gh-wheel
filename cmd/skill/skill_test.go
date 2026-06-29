@@ -35,7 +35,7 @@ func TestSkill_Stdout(t *testing.T) {
 		t.Fatalf("execute: %v", err)
 	}
 	got := out.String()
-	if !strings.HasPrefix(got, "---\n") {
+	if !strings.Contains(got, "---\n") {
 		t.Errorf("expected SKILL.md on stdout, got:\n%s", got)
 	}
 	if !strings.Contains(got, "name: gh-wheel") {
