@@ -459,7 +459,10 @@ gh wheel feedback
 
 ---
 
-### `gh wheel skill`
+### `gh wheel skill` *(deprecated)*
+
+> **Deprecated.** Use `gh skill install UtakataKyosui/gh-wheel gh-wheel` instead.
+> See [Claude Code Skills](#claude-code-skills) for details.
 
 Generate a Claude Code Agent Skill (`SKILL.md`) that teaches an AI agent how to operate gh-wheel.
 
