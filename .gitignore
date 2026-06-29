@@ -17,8 +17,9 @@ version_inject.go
 # Go module cache
 vendor/
 
-# Claude Code session files
+# Claude Code session files and locally-installed skills
 .claude/session-summary.md
+.claude/skills/
 
 # macOS
 .DS_Store

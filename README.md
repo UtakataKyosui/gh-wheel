@@ -443,19 +443,18 @@ gh wheel skill --name my-wheel          # custom skill name
 
 ## Claude Code Skills
 
-The Claude Code Agent Skill for gh-wheel is bundled in the `skills/` directory
-of this extension. Once you have gh-wheel installed, copy the skill to your
-global Claude skills directory:
+The Claude Code Agent Skill for gh-wheel is published via `gh skill`.
+Install it with a single command:
 
 ```bash
-cp -r "$(gh extension path wheel)/skills/gh-wheel" ~/.claude/skills/
+gh skill install UtakataKyosui/gh-wheel gh-wheel
 ```
 
-This writes `~/.claude/skills/gh-wheel/SKILL.md` plus per-command and workflow
-reference files so Claude picks it up automatically in every session.
+This installs `gh-wheel/SKILL.md` plus per-command and workflow reference files
+so Claude picks it up automatically in every session.
 
 > **`gh wheel skill` is deprecated.** Future Claude Code skills for gh-wheel are
-> distributed via `skills/` in this repository and installed with the command above.
+> published via `gh skill` and installed with the command above.
 
 ### What the skill teaches Claude
 

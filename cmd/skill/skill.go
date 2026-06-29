@@ -40,7 +40,7 @@ with the actual commands.
 By default the SKILL.md is written to stdout. Pass --output <dir> to write it to
 <dir>/<name>/SKILL.md (e.g. --output .claude/skills produces
 .claude/skills/gh-wheel/SKILL.md).`,
-		Deprecated: "the Claude Code skill is now published in the skills/ directory of this extension.\n\nInstall it with:\n  cp -r \"$(gh extension path wheel)/skills/gh-wheel\" ~/.claude/skills/\n",
+		Deprecated: "the Claude Code skill for gh-wheel is now published via gh skill.\n\nInstall it with:\n  gh skill install UtakataKyosui/gh-wheel gh-wheel\n",
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !nameRe.MatchString(o.name) {
